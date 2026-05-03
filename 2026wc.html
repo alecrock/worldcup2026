@@ -141,15 +141,144 @@
             font-weight: bold;
             font-size: 14px;
         }
-        .match-venue {
+        .match-venue a,
+        .match-venue a:visited {
+            color: #667eea;
+            text-decoration: none;
+            padding: 3px 8px;
+            background: #f0f3ff;
+            border-radius: 4px;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+        .match-venue a:hover {
+            background: #667eea;
+            color: white;
+        }
+        .match-venue { text-align: center; margin-top: 8px; }
+
+        /* 淘汰赛场地 */
+        .match-venue-ko {
             font-size: 11px;
             color: #888;
             text-align: center;
-            margin-top: 8px;
-            padding: 4px 8px;
+            margin-top: 6px;
+            padding: 3px 8px;
             background: #f8f9fa;
             border-radius: 4px;
         }
+        .match-venue-ko a,
+        .match-venue-ko a:visited {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .match-venue-ko a:hover { text-decoration: underline; }
+
+        /* 晋级路线图模态框 */
+        .bracket-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 10003;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+        .bracket-overlay.show { display: block; }
+        .bracket-header {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .bracket-title { font-size: 18px; font-weight: bold; }
+        .bracket-close {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .bracket-container {
+            padding: 20px;
+            min-width: 900px;
+            overflow-x: auto;
+        }
+        .bracket-tree {
+            display: flex;
+            align-items: stretch;
+            min-height: 500px;
+            gap: 0;
+        }
+        .bracket-round {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 10px 4px;
+            min-width: 120px;
+        }
+        .bracket-round-title {
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 10px;
+            background: #667eea;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .bracket-match {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 6px 8px;
+            margin: 4px 0;
+            font-size: 11px;
+            line-height: 1.5;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        .bracket-match-final {
+            border: 2px solid #f5576c;
+            background: #fff5f5;
+        }
+        .bracket-team {
+            padding: 2px 0;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bracket-vs {
+            text-align: center;
+            color: #999;
+            font-size: 10px;
+            margin: 2px 0;
+        }
+        .bracket-code {
+            font-size: 9px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 2px;
+        }
+        .bracket-connector {
+            position: absolute;
+            right: -20px;
+            width: 20px;
+            border-top: 2px solid #ccc;
+            border-right: 2px solid #ccc;
+            top: 50%;
+        }
+        .bracket-spacer { flex: 1; }
 
         /* 淘汰赛 */
         .knockout-tree { padding: 10px 5px; }
@@ -440,6 +569,15 @@
         </div>
     </div>
 
+    <!-- 淘汰赛晋级路线图弹窗 -->
+    <div class="bracket-overlay" id="bracketOverlay">
+        <div class="bracket-header">
+            <div class="bracket-title">🏆 淘汰赛晋级路线图</div>
+            <button class="bracket-close" onclick="closeBracket()">关闭</button>
+        </div>
+        <div class="bracket-container" id="bracketContainer"></div>
+    </div>
+
     <div class="container" id="capture">
         <div class="header">
             <h1>🏆 2026世界杯</h1>
@@ -551,68 +689,84 @@
             {date:"6月28日 上午10:00", group:"J组", home:"约旦", away:"阿根廷", venue:"达拉斯 AT&T Stadium"}
         ];
 
+        // ===== 淘汰赛场地映射 =====
+        const knockoutVenues = {
+            "M73":"洛杉矶 SoFi Stadium",  "M74":"费城 Lincoln Financial Field", "M75":"达拉斯 AT&T Stadium",
+            "M76":"纽约 MetLife Stadium", "M77":"亚特兰大 Mercedes-Benz Stadium", "M78":"西雅图 Lumen Field",
+            "M79":"墨西哥城 Estadio Azteca", "M80":"休斯敦 NRG Stadium", "M81":"迈阿密 Hard Rock Stadium",
+            "M82":"洛杉矶 SoFi Stadium", "M83":"圣克拉拉 Levi's Stadium", "M84":"多伦多 BMO Field",
+            "M85":"温哥华 BC Place", "M86":"瓜达拉哈拉 Estadio Akron", "M87":"马萨诸塞 Gillette Stadium",
+            "M88":"堪萨斯城 Arrowhead Stadium",
+            "M89":"达拉斯 AT&T Stadium", "M90":"纽约 MetLife Stadium", "M91":"洛杉矶 SoFi Stadium",
+            "M92":"休斯敦 NRG Stadium", "M93":"亚特兰大 Mercedes-Benz Stadium", "M94":"西雅图 Lumen Field",
+            "M95":"迈阿密 Hard Rock Stadium", "M96":"墨西哥城 Estadio Azteca",
+            "M97":"达拉斯 AT&T Stadium", "M98":"纽约 MetLife Stadium", "M99":"洛杉矶 SoFi Stadium",
+            "M100":"休斯敦 NRG Stadium", "M101":"达拉斯 AT&T Stadium", "M102":"纽约 MetLife Stadium",
+            "M103":"迈阿密 Hard Rock Stadium", "M104":"纽约 MetLife Stadium"
+        };
+
         // ===== 淘汰赛数据 =====
         const knockoutMatches = [
             {
                 round:"1/32决赛",
                 matches:[
-                    {code:"M73", date:"6月29日 上午2:00", home:"A组第2名", away:"B组第2名", venue:""},
-                    {code:"M74", date:"6月30日 上午1:00", home:"E组第1名", away:"最佳第三名1", venue:""},
-                    {code:"M75", date:"6月30日 上午3:00", home:"F组第1名", away:"C组第2名", venue:""},
-                    {code:"M76", date:"6月30日 上午6:00", home:"C组第1名", away:"F组第2名", venue:""},
-                    {code:"M77", date:"7月1日 上午1:00", home:"I组第1名", away:"最佳第三名2", venue:""},
-                    {code:"M78", date:"7月1日 上午3:00", home:"E组第2名", away:"I组第2名", venue:""},
-                    {code:"M79", date:"7月1日 上午6:00", home:"A组第1名", away:"最佳第三名3", venue:""},
-                    {code:"M80", date:"7月2日 上午0:00", home:"L组第1名", away:"最佳第三名4", venue:""},
-                    {code:"M81", date:"7月2日 上午3:00", home:"D组第1名", away:"最佳第三名5", venue:""},
-                    {code:"M82", date:"7月2日 上午6:00", home:"G组第1名", away:"最佳第三名6", venue:""},
-                    {code:"M83", date:"7月3日 上午0:00", home:"K组第2名", away:"L组第2名", venue:""},
-                    {code:"M84", date:"7月3日 上午3:00", home:"H组第1名", away:"J组第2名", venue:""},
-                    {code:"M85", date:"7月3日 上午5:00", home:"B组第1名", away:"最佳第三名7", venue:""},
-                    {code:"M86", date:"7月4日 上午2:00", home:"J组第1名", away:"H组第2名", venue:""},
-                    {code:"M87", date:"7月4日 上午3:00", home:"K组第1名", away:"最佳第三名8", venue:""},
-                    {code:"M88", date:"7月4日 上午5:00", home:"D组第2名", away:"G组第2名", venue:""}
+                    {code:"M73", date:"6月29日 上午2:00", home:"A组第2名", away:"B组第2名", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M74", date:"6月30日 上午1:00", home:"E组第1名", away:"最佳第三名1", venue:"费城 Lincoln Financial Field"},
+                    {code:"M75", date:"6月30日 上午3:00", home:"F组第1名", away:"C组第2名", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M76", date:"6月30日 上午6:00", home:"C组第1名", away:"F组第2名", venue:"纽约 MetLife Stadium"},
+                    {code:"M77", date:"7月1日 上午1:00", home:"I组第1名", away:"最佳第三名2", venue:"亚特兰大 Mercedes-Benz Stadium"},
+                    {code:"M78", date:"7月1日 上午3:00", home:"E组第2名", away:"I组第2名", venue:"西雅图 Lumen Field"},
+                    {code:"M79", date:"7月1日 上午6:00", home:"A组第1名", away:"最佳第三名3", venue:"墨西哥城 Estadio Azteca"},
+                    {code:"M80", date:"7月2日 上午0:00", home:"L组第1名", away:"最佳第三名4", venue:"休斯敦 NRG Stadium"},
+                    {code:"M81", date:"7月2日 上午3:00", home:"D组第1名", away:"最佳第三名5", venue:"迈阿密 Hard Rock Stadium"},
+                    {code:"M82", date:"7月2日 上午6:00", home:"G组第1名", away:"最佳第三名6", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M83", date:"7月3日 上午0:00", home:"K组第2名", away:"L组第2名", venue:"圣克拉拉 Levi's Stadium"},
+                    {code:"M84", date:"7月3日 上午3:00", home:"H组第1名", away:"J组第2名", venue:"多伦多 BMO Field"},
+                    {code:"M85", date:"7月3日 上午5:00", home:"B组第1名", away:"最佳第三名7", venue:"温哥华 BC Place"},
+                    {code:"M86", date:"7月4日 上午2:00", home:"J组第1名", away:"H组第2名", venue:"瓜达拉哈拉 Estadio Akron"},
+                    {code:"M87", date:"7月4日 上午3:00", home:"K组第1名", away:"最佳第三名8", venue:"马萨诸塞 Gillette Stadium"},
+                    {code:"M88", date:"7月4日 上午5:00", home:"D组第2名", away:"G组第2名", venue:"堪萨斯城 Arrowhead Stadium"}
                 ]
             },
             {
                 round:"1/16决赛",
                 matches:[
-                    {code:"M89", date:"7月5日 上午3:00", home:"M74胜者", away:"M77胜者", venue:""},
-                    {code:"M90", date:"7月5日 上午6:00", home:"M73胜者", away:"M75胜者", venue:""},
-                    {code:"M91", date:"7月6日 上午3:00", home:"M76胜者", away:"M78胜者", venue:""},
-                    {code:"M92", date:"7月6日 上午6:00", home:"M79胜者", away:"M80胜者", venue:""},
-                    {code:"M93", date:"7月7日 上午3:00", home:"M83胜者", away:"M84胜者", venue:""},
-                    {code:"M94", date:"7月7日 上午6:00", home:"M81胜者", away:"M82胜者", venue:""},
-                    {code:"M95", date:"7月8日 上午3:00", home:"M86胜者", away:"M88胜者", venue:""},
-                    {code:"M96", date:"7月8日 上午6:00", home:"M85胜者", away:"M87胜者", venue:""}
+                    {code:"M89", date:"7月5日 上午3:00", home:"M74胜者", away:"M77胜者", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M90", date:"7月5日 上午6:00", home:"M73胜者", away:"M75胜者", venue:"纽约 MetLife Stadium"},
+                    {code:"M91", date:"7月6日 上午3:00", home:"M76胜者", away:"M78胜者", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M92", date:"7月6日 上午6:00", home:"M79胜者", away:"M80胜者", venue:"休斯敦 NRG Stadium"},
+                    {code:"M93", date:"7月7日 上午3:00", home:"M83胜者", away:"M84胜者", venue:"亚特兰大 Mercedes-Benz Stadium"},
+                    {code:"M94", date:"7月7日 上午6:00", home:"M81胜者", away:"M82胜者", venue:"西雅图 Lumen Field"},
+                    {code:"M95", date:"7月8日 上午3:00", home:"M86胜者", away:"M88胜者", venue:"迈阿密 Hard Rock Stadium"},
+                    {code:"M96", date:"7月8日 上午6:00", home:"M85胜者", away:"M87胜者", venue:"墨西哥城 Estadio Azteca"}
                 ]
             },
             {
                 round:"1/4决赛",
                 matches:[
-                    {code:"M97", date:"7月10日 上午9:00", home:"M89胜者", away:"M90胜者", venue:""},
-                    {code:"M98", date:"7月11日 上午8:00", home:"M93胜者", away:"M94胜者", venue:""},
-                    {code:"M99", date:"7月12日 上午7:00", home:"M91胜者", away:"M92胜者", venue:""},
-                    {code:"M100", date:"7月12日 上午10:00", home:"M95胜者", away:"M96胜者", venue:""}
+                    {code:"M97", date:"7月10日 上午9:00", home:"M89胜者", away:"M90胜者", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M98", date:"7月11日 上午8:00", home:"M93胜者", away:"M94胜者", venue:"纽约 MetLife Stadium"},
+                    {code:"M99", date:"7月12日 上午7:00", home:"M91胜者", away:"M92胜者", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M100", date:"7月12日 上午10:00", home:"M95胜者", away:"M96胜者", venue:"休斯敦 NRG Stadium"}
                 ]
             },
             {
                 round:"半决赛",
                 matches:[
-                    {code:"M101", date:"7月15日 上午9:00", home:"M97胜者", away:"M98胜者", venue:""},
-                    {code:"M102", date:"7月16日 上午8:00", home:"M99胜者", away:"M100胜者", venue:""}
+                    {code:"M101", date:"7月15日 上午9:00", home:"M97胜者", away:"M98胜者", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M102", date:"7月16日 上午8:00", home:"M99胜者", away:"M100胜者", venue:"纽约 MetLife Stadium"}
                 ]
             },
             {
                 round:"三四名决赛",
                 matches:[
-                    {code:"M103", date:"7月19日 上午8:00", home:"M101负者", away:"M102负者", venue:""}
+                    {code:"M103", date:"7月19日 上午8:00", home:"M101负者", away:"M102负者", venue:"迈阿密 Hard Rock Stadium"}
                 ]
             },
             {
                 round:"★冠军决赛★",
                 matches:[
-                    {code:"M104", date:"7月20日 上午8:00", home:"M101胜者", away:"M102胜者", venue:"", isFinal:true}
+                    {code:"M104", date:"7月20日 上午8:00", home:"M101胜者", away:"M102胜者", venue:"纽约 MetLife Stadium", isFinal:true}
                 ]
             }
         ];
@@ -966,7 +1120,7 @@
                                 </div>
                             </div>
                         </div>
-                        ${match.venue ? `<div class="match-venue">📍 ${match.venue}</div>` : ''}
+                        ${match.venue ? `<div class="match-venue"><a href="https://map.baidu.com/search/${encodeURIComponent(match.venue)}" target="_blank" rel="noopener">📍 ${match.venue}</a></div>` : ''}
                     </div>
                 `;
             });
@@ -977,10 +1131,13 @@
         function renderKnockoutSection() {
             const section = document.getElementById('knockoutSection');
             let html = '<div class="knockout-tree">';
+            html += '<div style="text-align:center;margin-bottom:15px;"><button onclick="showBracket()" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;padding:10px 25px;border-radius:25px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(102,126,234,0.3);">🏆 查看晋级路线图</button></div>';
+
             knockoutMatches.forEach(round => {
                 const isFinal = round.round.includes('冠军');
                 html += `<div class="round"><div class="round-title ${isFinal ? 'final' : ''}">${round.round}</div>`;
                 round.matches.forEach(match => {
+                    const venueLink = match.venue ? `<div class="match-venue-ko"><a href="https://map.baidu.com/search/${encodeURIComponent(match.venue)}" target="_blank" rel="noopener">📍 ${match.venue}</a></div>` : '';
                     html += `
                         <div class="match-node ${match.isFinal ? 'final' : ''}">
                             <div class="match-time">🕐 ${match.date}<span class="match-code">${match.code}</span></div>
@@ -989,6 +1146,7 @@
                                 <div style="text-align:center;color:#999;margin:5px 0;font-size:12px;">VS</div>
                                 <div class="team-name-knockout">${match.away}</div>
                             </div>
+                            ${venueLink}
                         </div>
                     `;
                 });
@@ -1105,6 +1263,114 @@
                     document.getElementById('capture').style.marginTop = '56px';
                 }, 800);
             }
+        }
+
+        function closeBracket() {
+            document.getElementById('bracketOverlay').classList.remove('show');
+        }
+
+        function showBracket() {
+            document.getElementById('bracketOverlay').classList.add('show');
+            const container = document.getElementById('bracketContainer');
+
+            // 构建晋级树数据
+            const rounds = knockoutMatches.map((round, ri) => ({
+                title: round.round,
+                matches: round.matches.map(m => ({
+                    code: m.code,
+                    date: m.date,
+                    home: m.home,
+                    away: m.away,
+                    venue: m.venue,
+                    isFinal: !!m.isFinal
+                }))
+            }));
+
+            // 计算每轮卡片高度和间距
+            let html = '<div class="bracket-tree">';
+            rounds.forEach((round, ri) => {
+                const count = round.matches.length;
+                // 基础间距：轮次越后间距越大
+                const spacerBefore = ri === 0 ? 0 : Math.pow(2, ri) * 10;
+                html += `<div class="bracket-round" style="justify-content:space-around;">`;
+                html += `<div class="bracket-round-title">${round.title}</div>`;
+                // 计算该轮卡片垂直布局
+                const totalH = count * 60 + (count - 1) * 8;
+                const wrapH = Math.max(totalH, 300);
+                html += `<div style="display:flex;flex-direction:column;justify-content:space-around;height:${wrapH}px;flex:1;">`;
+                round.matches.forEach(m => {
+                    const venueLink = m.venue
+                        ? `<a href="https://map.baidu.com/search/${encodeURIComponent(m.venue)}" target="_blank" rel="noopener" style="font-size:10px;color:#667eea;">📍 ${m.venue}</a>`
+                        : '';
+                    html += `
+                        <div class="bracket-match ${m.isFinal?'bracket-match-final':''}">
+                            <div class="bracket-team">${m.home}</div>
+                            <div class="bracket-vs">VS</div>
+                            <div class="bracket-team">${m.away}</div>
+                            <div class="bracket-code">${m.code}</div>
+                            <div style="font-size:10px;margin-top:2px;">${venueLink}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                html += '</div>';
+                if (ri < rounds.length - 1) {
+                    html += '<div style="width:20px;flex-shrink:0;"></div>';
+                }
+            });
+            html += '</div>';
+
+            // 添加连接线用 SVG 覆盖
+            html += `<div id="bracketSvgWrap" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;"></div>`;
+
+            container.innerHTML = html;
+
+            // 用 SVG 画连接线
+            drawBracketLines();
+        }
+
+        function drawBracketLines() {
+            const container = document.getElementById('bracketContainer');
+            const tree = container.querySelector('.bracket-tree');
+            if (!tree) return;
+            const rectC = container.getBoundingClientRect();
+            const rounds = tree.querySelectorAll('.bracket-round');
+            let svg = `<svg width="${rectC.width}" height="${rectC.height}" style="position:absolute;top:0;left:0;pointer-events:none;">`;
+            // 简化：只画轮次之间的连接线
+            for (let i = 0; i < rounds.length - 1; i++) {
+                const r1 = rounds[i], r2 = rounds[i+1];
+                const m1s = r1.querySelectorAll('.bracket-match');
+                const m2s = r2.querySelectorAll('.bracket-match');
+                const r1Rect = r1.getBoundingClientRect();
+                const r2Rect = r2.getBoundingClientRect();
+                const x1 = r1Rect.right - rectC.left;
+                const x2 = r2Rect.left - rectC.left;
+                for (let j = 0; j < m2s.length; j++) {
+                    const m2Rect = m2s[j].getBoundingClientRect();
+                    const y2 = m2Rect.top + m2Rect.height/2 - rectC.top;
+                    // 上一轮有2个比赛对应下轮的1个
+                    const srcIdx1 = j * 2, srcIdx2 = j * 2 + 1;
+                    if (m1s[srcIdx1]) {
+                        const m1a = m1s[srcIdx1].getBoundingClientRect();
+                        const y1a = m1a.top + m1a.height/2 - rectC.top;
+                        const m1b = m1s[srcIdx2] ? m1s[srcIdx2].getBoundingClientRect() : m1a;
+                        const y1b = m1s[srcIdx2] ? m1b.top + m1b.height/2 - rectC.top : y1a;
+                        const yMid = (y1a + y1b) / 2;
+                        svg += `<path d="M${x1},${y1a} C${x1+20},${y1a} ${x2-20},${yMid} ${x2},${yMid}" stroke="#bbb" stroke-width="1.5" fill="none"/>`;
+                        svg += `<path d="M${x1},${y1b} C${x1+20},${y1b} ${x2-20},${yMid} ${x2},${yMid}" stroke="#bbb" stroke-width="1.5" fill="none"/>`;
+                        svg += `<circle cx="${x2}" cy="${yMid}" r="3" fill="#667eea"/>`;
+                    }
+                }
+            }
+            svg += '</svg>';
+            let svgWrap = document.getElementById('bracketSvgWrap');
+            if (!svgWrap) {
+                svgWrap = document.createElement('div');
+                svgWrap.id = 'bracketSvgWrap';
+                svgWrap.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;';
+                container.appendChild(svgWrap);
+            }
+            svgWrap.innerHTML = svg;
         }
 
         // ===== 导出图片 =====
