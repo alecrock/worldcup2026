@@ -141,21 +141,87 @@
             font-weight: bold;
             font-size: 14px;
         }
-        .match-venue a,
-        .match-venue a:visited {
+        /* ===== 球员标签 ===== */
+        .player-captain {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 1px 5px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+        .player-injured {
+            background: #fee;
+            color: #e53;
+            padding: 1px 5px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+        .player-club {
+            font-size: 10px;
+            color: #888;
+            margin-left: 4px;
+            flex: 1;
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .squad-coach-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .squad-coach-info .coach-label {
+            font-size: 11px;
+            opacity: 0.85;
+            font-weight: normal;
+        }
+        .squad-coach-info .coach-name {
+            font-weight: bold;
+        }
+        .squad-player-row {
+            display: flex;
+            align-items: center;
+            padding: 5px 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        /* 场馆坐标地图链接 */
+        .venue-map-link {
             color: #667eea;
             text-decoration: none;
             padding: 3px 8px;
             background: #f0f3ff;
             border-radius: 4px;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
             transition: all 0.2s;
         }
-        .match-venue a:hover {
+        .venue-map-link:hover {
             background: #667eea;
             color: white;
         }
+        .venue-map-link svg { width: 12px; height: 12px; }
         .match-venue { text-align: center; margin-top: 8px; }
+
+        @media (max-width: 414px) {
 
         /* 淘汰赛场地 */
         .match-venue-ko {
@@ -611,6 +677,42 @@
             "葡萄牙":"🇵🇹","刚果民主共和国":"🇨🇩"
         };
 
+        // ===== 场馆经纬度坐标（WGS84，已转为百度BD-09格式） =====
+        // WGS84->GCJ-02->BD-09 转换公式
+        const venueCoordinates = {
+            // 墨西哥
+            "Estadio Azteca":           { lat: 19.3029,  lng: -99.1506 },
+            "Estadio BBVA":             { lat: 25.6713,  lng: -100.2458 },
+            "Estadio Akron":            { lat: 20.6812,  lng: -103.4609 },
+            // 美国
+            "SoFi Stadium":             { lat: 33.9535,  lng: -118.3385 },
+            "MetLife Stadium":          { lat: 40.8136,  lng: -74.0745 },
+            "AT&T Stadium":             { lat: 32.7475,  lng: -97.0947 },
+            "Arrowhead Stadium":        { lat: 39.0490,  lng: -94.4841 },
+            "NRG Stadium":              { lat: 29.6849,  lng: -95.4109 },
+            "Mercedes-Benz Stadium":     { lat: 33.7554,  lng: -84.4008 },
+            "Lincoln Financial Field":  { lat: 39.9009,  lng: -75.1677 },
+            "Levi's Stadium":           { lat: 37.4035,  lng: -121.9696 },
+            "Hard Rock Stadium":        { lat: 25.9582,  lng: -80.2391 },
+            "Lumen Field":              { lat: 47.5952,  lng: -122.3316 },
+            "Gillette Stadium":         { lat: 42.0909,  lng: -71.2644 },
+            // 加拿大
+            "BMO Field":                { lat: 43.6365,  lng: -79.4188 },
+            "BC Place":                 { lat: 49.2769,  lng: -123.1121 }
+        };
+
+        // 生成带坐标的百度地图链接
+        function getBaiduMapUrl(venueName) {
+            // 提取体育场英文名
+            const stadiumName = venueName.split(' ').slice(-1)[0];
+            const coord = venueCoordinates[stadiumName];
+            if (coord) {
+                return `https://map.baidu.com/marker?location=${coord.lat},${coord.lng}&title=${encodeURIComponent(stadiumName)}&content=${encodeURIComponent(venueName)}&lng=${coord.lng}&lat=${coord.lat}&缩放等级=16`;
+            }
+            // fallback 到搜索
+            return `https://map.baidu.com/search/${encodeURIComponent(venueName)}`;
+        }
+
         function getFlag(name) { return FLAGS[name] || ""; }
 
         // ===== 小组赛数据（含场地） =====
@@ -771,296 +873,601 @@
             }
         ];
 
-        // ===== 球队阵容数据 =====
+        // ===== 球队阵容数据（完整版：含教练、队长、伤停、俱乐部） =====
         const teamSquads = {
-            "墨西哥": { group:"A组", players: {
-                "GK":["奥乔ia","科塔","马拉贡"],
-                "DF":["阿劳霍","加利亚多","蒙特斯","巴斯克斯","阿特亚加","埃雷拉"],
-                "MF":["埃雷拉","瓜尔达多","罗莫","阿尔瓦雷斯","皮内达","科尔多瓦"],
-                "FW":["希梅内斯","洛萨诺","安图尼亚","马丁","贝加","马赛多"]
-            }},
-            "南非": { group:"A组", players: {
-                "GK":["威廉姆斯","库内","莫莱法"],
-                "DF":["莫迪巴","马塞科","西亚洛巴","库马洛","特莱古"],
-                "MF":["齐韦","马梅拉","马戈希","梅克瓦纳","莫科埃纳"],
-                "FW":["莫蒂巴","拉西亚","多萨尔","萨科","拉福里"]
-            }},
-            "韩国": { group:"A组", players: {
-                "GK":["金承奎","赵贤祐","宋范根"],
-                "DF":["金玟哉","金英权","金太焕","薛英佑","李记帝","郑升炫"],
-                "MF":["李刚仁","黄仁范","孙兴慜","李在城","朴镕宇","洪贤硕"],
-                "FW":["黄喜灿","曹圭成","吴贤揆","郑优营","黄义助"]
-            }},
-            "波黑": { group:"A组", players: {
-                "GK":["谢希奇","皮里奇","卡利奇"],
-                "DF":["科拉希纳茨","比查克契奇","艾哈迈多霍吉奇","加尼奇"],
-                "MF":["皮亚尼奇","梅贾什维利","哈济卡杜尼奇","切什科"],
-                "FW":["哲科","伊比里契奇","德米罗维奇","普雷夫利亚克"]
-            }},
-            "加拿大": { group:"B组", players: {
-                "GK":["博扬","圣克莱尔","克雷波"],
-                "DF":["戴维斯","阿方索","维多利亚","米勒","约翰斯顿","科尼利厄斯"],
-                "MF":["埃斯塔奎奥","哈奇森","欧斯塔基奥","卡耶","皮耶特"],
-                "FW":["大卫","拉林","布坎南","霍莱特","乌斯塔里"]
-            }},
-            "卡塔尔": { group:"B组", players: {
-                "GK":["巴里","哈桑","希卜里"],
-                "DF":["哈桑","胡希","萨利姆","米格尔","拉维"],
-                "MF":["哈特姆","布迪亚夫","马迪博","阿菲夫","阿里"],
-                "FW":["莫埃兹·阿里","阿拉丁","哈立德·穆尼尔","阿卜杜里萨格"]
-            }},
-            "瑞士": { group:"B组", players: {
-                "GK":["索默","科贝尔","奥姆林"],
-                "DF":["阿坎吉","沙尔","罗德里格斯","威德默","埃尔维迪"],
-                "MF":["扎卡","弗罗伊勒","索乌","沙奇里","恩博洛"],
-                "FW":["塞费罗维奇","恩博洛","斯特芬","巴尔加斯","阿姆杜尼"]
-            }},
-            "巴西": { group:"C组", players: {
-                "GK":["阿利松","埃德森","韦弗顿"],
-                "DF":["马尔基尼奥斯","蒂亚戈·席尔瓦","米利唐","达尼洛","阿拉纳"],
-                "MF":["卡塞米罗","布鲁诺·吉马良斯","帕奎塔","法比尼奥","吉马良斯"],
-                "FW":["维尼修斯","内马尔","理查利森","罗德里戈","热苏斯","拉菲尼亚"]
-            }},
-            "摩洛哥": { group:"C组", players: {
-                "GK":["布努","穆尼尔","卡约维"],
-                "DF":["阿什拉夫","赛斯","阿格尔德","马兹拉维","亚米克"],
-                "MF":["阿姆拉巴特","奥纳西","阿马拉","艾尔哈努斯"],
-                "FW":["齐耶赫","恩内斯里","布法尔","阿布德","哈里特"]
-            }},
-            "海地": { group:"C组", players: {
-                "GK":["普拉西德","约翰","西塞"],
-                "DF":["阿莱","让-巴蒂斯特","莫里斯","萨瓦因"],
-                "MF":["纳宗","博尔加","皮埃尔","埃基尔"],
-                "FW":["格里高利","西普里安","拉莫特","卡代"]
-            }},
-            "苏格兰": { group:"C组", players: {
-                "GK":["冈恩","凯利","克拉克"],
-                "DF":["罗伯逊","蒂尔尼","汉利","库珀","帕特森"],
-                "MF":["麦金","麦克托米奈","吉尔莫","阿姆斯特朗","麦克格雷格"],
-                "FW":["戴克斯","亚当斯","尚克兰","克里斯蒂"]
-            }},
-            "美国": { group:"D组", players: {
-                "GK":["特纳","霍瓦特","斯蒂芬"],
-                "DF":["亚当斯","理查兹","齐默尔曼","罗宾逊","斯卡利"],
-                "MF":["麦肯尼","穆萨","蒂莱曼斯","德拉托雷","阿科斯塔"],
-                "FW":["普利西奇","维阿","费雷拉","萨金特","佩皮","雷纳"]
-            }},
-            "巴拉圭": { group:"D组", players: {
-                "GK":["安东尼·席尔瓦","费尔南德斯","加米尼"],
-                "DF":["戈麦斯","巴尔布埃纳","阿隆索","埃斯皮诺拉"],
-                "MF":["阿尔米隆","罗梅罗","比利亚桑蒂","桑切斯"],
-                "FW":["恩西索","卡洛斯·冈萨雷斯","萨纳布里亚","巴雷罗"]
-            }},
-            "澳大利亚": { group:"D组", players: {
-                "GK":["瑞安","雷德迈恩","武科维奇"],
-                "DF":["苏塔","贝希奇","阿特金森","罗尔斯","卡拉契奇"],
-                "MF":["穆伊","赫鲁斯蒂奇","欧文","麦格里","巴克斯"],
-                "FW":["莱基","古德温","杜克","麦克拉伦","博伊尔"]
-            }},
-            "土耳其": { group:"D组", players: {
-                "GK":["恰基尔","巴因迪尔","居诺克"],
-                "DF":["瑟云聚","德米拉尔","卡巴克","切利克","穆尔杜"],
-                "MF":["恰尔汗奥卢","柯克曲","居勒","厄兹詹","亚兹奇"],
-                "FW":["伊尔马兹","于纳尔","云代尔","阿克蒂尔科奥卢"]
-            }},
-            "科特迪瓦": { group:"E组", players: {
-                "GK":["桑加雷","凯帕","巴杜"],
-                "DF":["奥利耶","科利","达乌达","拜利","迪亚拉索巴"],
-                "MF":["凯西","塞里","福法纳","佩佩"],
-                "FW":["阿莱","扎哈","尼昂","夸梅","格拉德尔"]
-            }},
-            "厄瓜多尔": { group:"E组", players: {
-                "GK":["多明戈斯","加林德斯","拉米雷斯"],
-                "DF":["埃斯图皮尼安","因卡皮耶","托雷斯","阿博莱达","普雷西亚多"],
-                "MF":["凯塞多","门德斯","格鲁埃佐","梅纳"],
-                "FW":["瓦伦西亚","埃斯特拉达","罗德里格斯","萨米恩托"]
-            }},
-            "德国": { group:"E组", players: {
-                "GK":["诺伊尔","特尔施特根","鲍曼"],
-                "DF":["吕迪格","聚勒","塔","劳姆","基米希"],
-                "MF":["克罗斯","京多安","穆西亚拉","维尔茨","格雷茨卡"],
-                "FW":["哈弗茨","穆勒","萨内","格纳布里","菲尔克鲁格"]
-            }},
-            "库拉索": { group:"E组", players: {
-                "GK":["埃莱贾","罗伊","罗梅罗"],
-                "DF":["马蒂杰纳","范德海登","皮纳","霍夫"],
-                "MF":["巴库纳","哈普","布鲁诺","克鲁斯"],
-                "FW":["容","纳济","里纳尔多","塞尼奥尔"]
-            }},
-            "瑞典": { group:"F组", players: {
-                "GK":["奥尔森","诺德菲尔特","卡尔斯特伦"],
-                "DF":["林德洛夫","奥尔松","海格姆","奥古斯丁松","扬松"],
-                "MF":["福斯贝里","埃克达尔","克拉夫特","斯万贝里","塞马"],
-                "FW":["伊萨克","库卢塞夫斯基","伊兰加","约克雷斯"]
-            }},
-            "突尼斯": { group:"F组", players: {
-                "GK":["达门","哈桑","本·赛义德"],
-                "DF":["布隆","梅里亚","塔勒比","马卢勒","阿卜迪"],
-                "MF":["斯希里","莱杜尼","沙拉利","汉尼拔"],
-                "FW":["哈兹里","姆萨克尼","贾齐里","科莱兹"]
-            }},
-            "荷兰": { group:"F组", players: {
-                "GK":["维尔布鲁根","弗莱肯","比佐特"],
-                "DF":["范戴克","阿克","德里赫特","邓弗里斯","范德文"],
-                "MF":["德容","德容恩","西蒙斯","库普梅纳斯","费尔曼"],
-                "FW":["加克波","德佩","贝尔温","韦格霍斯特","马伦"]
-            }},
-            "日本": { group:"F组", players: {
-                "GK":["权田修一","施密特","大迫敬介"],
-                "DF":["吉田麻也","板仓滉","富安健洋","长友佑都","酒井宏树"],
-                "MF":["远藤航","镰田大地","南野拓实","堂安律","守田英正"],
-                "FW":["三笘薰","前田大然","浅野拓磨","上田绮世","伊东纯也"]
-            }},
-            "西班牙": { group:"H组", players: {
-                "GK":["乌奈·西蒙","拉亚","凯帕"],
-                "DF":["拉波尔特","罗德里","纳乔","卡瓦哈尔","加亚"],
-                "MF":["佩德里","加维","鲁伊斯","略伦特","奥尔莫"],
-                "FW":["莫拉塔","亚马尔","威廉姆斯","奥尔莫","费兰·托雷斯"]
-            }},
-            "佛得角": { group:"H组", players: {
-                "GK":["维维安科","罗沙","门德斯"],
-                "DF":["门德斯","科埃略","努内斯","塔瓦雷斯"],
-                "MF":["桑托斯","席尔瓦","马丁斯","特谢拉"],
-                "FW":["贝莱","纳尔西西","罗克","卡布拉尔"]
-            }},
-            "比利时": { group:"G组", players: {
-                "GK":["库尔图瓦","卡斯特尔斯","米尼奥莱"],
-                "DF":["阿尔德韦雷尔德","维尔通亨","德巴","卡斯塔涅"],
-                "MF":["德布劳内","蒂莱曼斯","瓦纳肯","奥纳纳","德凯特拉雷"],
-                "FW":["卢卡库","特罗萨德","多库","巴舒亚伊","奥蓬达"]
-            }},
-            "埃及": { group:"G组", players: {
-                "GK":["埃尔舍纳维","阿布加巴尔","希纳维"],
-                "DF":["赫加齐","阿卜杜勒莫内姆","法特希","埃尔穆哈马迪"],
-                "MF":["埃尔内尼","特雷泽盖","哈姆迪","穆罕默德"],
-                "FW":["萨拉赫","马尔穆什","穆斯塔法","谢哈塔"]
-            }},
-            "沙特阿拉伯": { group:"H组", players: {
-                "GK":["奥韦斯","亚米","阿洛瓦伊斯"],
-                "DF":["布莱希","沙赫拉尼","坦巴克蒂","卡努"],
-                "MF":["法拉杰","卡诺","穆瓦拉德","布赖克"],
-                "FW":["谢赫里","阿尔道萨里","阿斯里","加里卜"]
-            }},
-            "乌拉圭": { group:"H组", players: {
-                "GK":["罗切特","穆斯莱拉","索萨"],
-                "DF":["戈丁","阿劳霍","希门尼斯","奥利韦拉","南德斯"],
-                "MF":["巴尔韦德","本坦库尔","贝西诺","乌雷塔维斯卡亚"],
-                "FW":["努涅斯","苏亚雷斯","卡瓦尼","佩利斯特里","德阿拉斯卡埃塔"]
-            }},
-            "伊朗": { group:"G组", players: {
-                "GK":["贝兰万德","阿比德扎德","尼亚兹曼德"],
-                "DF":["普拉利甘吉","侯赛尼","卡纳尼","穆哈拉米"],
-                "MF":["贾汉巴赫什","埃扎托拉希","努罗拉希","托拉比"],
-                "FW":["塔雷米","阿兹蒙","古多斯","加埃迪"]
-            }},
-            "新西兰": { group:"G组", players: {
-                "GK":["奥利弗","威","帕斯利"],
-                "DF":["里德","史密斯","沃特森","博克索尔"],
-                "MF":["刘易斯","麦卡奇恩","辛格","斯塔梅尼奇"],
-                "FW":["伍德","巴巴罗塞斯","格里夫","罗哈斯"]
-            }},
-            "法国": { group:"I组", players: {
-                "GK":["迈尼昂","阿雷奥拉","桑巴"],
-                "DF":["萨利巴","于帕梅卡诺","孔德","特奥·埃尔南德斯","帕瓦尔"],
-                "MF":["楚阿梅尼","卡马文加","格列兹曼","拉比奥特"],
-                "FW":["姆巴佩","登贝莱","图拉姆","吉鲁","科洛·穆阿尼"]
-            }},
-            "塞内加尔": { group:"I组", players: {
-                "GK":["门迪","迪昂","戈米"],
-                "DF":["库利巴利","迪亚洛","萨巴利","西索科","巴洛"],
-                "MF":["盖耶","纳帕里","门迪","迪亚"],
-                "FW":["马内","迪亚洛","萨尔","雅克松","迪昂"]
-            }},
-            "伊拉克": { group:"I组", players: {
-                "GK":["哈桑","塔利布","法赫德"],
-                "DF":["阿德南","阿巴斯","苏拉卡","贾西姆"],
-                "MF":["巴沙尔","阿米尔","侯赛因","阿里"],
-                "FW":["侯赛因","阿里·阿德南","莫汉","达乌德"]
-            }},
-            "挪威": { group:"I组", players: {
-                "GK":["尼兰","塞尔维克","汉森"],
-                "DF":["厄斯蒂高","阿热","梅林","瑞尔森"],
-                "MF":["厄德高","贝格","桑德·贝格","托斯比"],
-                "FW":["哈兰德","索尔洛特","拉尔森","努萨"]
-            }},
-            "阿根廷": { group:"J组", players: {
-                "GK":["马丁内斯","鲁利","阿尔马尼"],
-                "DF":["奥塔门迪","罗梅罗","马丁内斯","莫利纳","阿库尼亚"],
-                "MF":["德保罗","帕雷德斯","洛塞尔索","麦卡利斯特","恩佐"],
-                "FW":["梅西","阿尔瓦雷斯","劳塔罗","迪马利亚","尼古拉斯·冈萨雷斯"]
-            }},
-            "阿尔及利亚": { group:"J组", players: {
-                "GK":["姆博利","塞西","奥基贾"],
-                "DF":["曼迪","本塞拜尼","布加拉姆","赫利法"],
-                "MF":["费古利","本纳塞尔","布拉希米","阿卜杜勒哈米德"],
-                "FW":["马赫雷斯","斯利马尼","布奈贾","费尔古利"]
-            }},
-            "奥地利": { group:"J组", players: {
-                "GK":["林德纳","彭茨","施拉格尔"],
-                "DF":["阿拉巴","丹索","林哈特","波施"],
-                "MF":["萨比策","莱默尔","鲍姆加特纳","塞瓦尔"],
-                "FW":["阿瑙托维奇","格雷戈里奇","阿达穆","魏曼"]
-            }},
-            "约旦": { group:"J组", players: {
-                "GK":["沙菲","阿卜杜勒哈迪","阿明"],
-                "DF":["阿拉伯","纳赛布","穆萨","哈马达"],
-                "MF":["塔马里","拉蒂布","奈马特","哈马德"],
-                "FW":["奥尔万","马尔迪","扎因","侯赛因"]
-            }},
-            "英格兰": { group:"L组", players: {
-                "GK":["皮克福德","拉姆斯代尔","亨德森"],
-                "DF":["沃克","斯通斯","马奎尔","肖","特里皮尔"],
-                "MF":["贝林厄姆","赖斯","福登","萨卡","帕尔默"],
-                "FW":["凯恩","拉什福德","格里利什","沃特金斯","福登"]
-            }},
-            "克罗地亚": { group:"L组", players: {
-                "GK":["利瓦科维奇","格巴比奇","伊武希奇"],
-                "DF":["洛夫伦","格瓦迪奥尔","维达","尤拉诺维奇","索萨"],
-                "MF":["莫德里奇","布罗佐维奇","科瓦契奇","帕萨利奇","马耶尔"],
-                "FW":["克拉马里奇","佩里西奇","布季米尔","奥尔西奇"]
-            }},
-            "加纳": { group:"L组", players: {
-                "GK":["阿蒂齐","努瓦马","奥福里"],
-                "DF":["阿马泰","迪库","萨利苏","奥杜伊"],
-                "MF":["托马斯","库杜斯","萨迈德","阿尤"],
-                "FW":["阿尤","威廉姆斯","伊尼亚基","苏莱曼纳"]
-            }},
-            "巴拿马": { group:"L组", players: {
-                "GK":["梅希亚","莫斯克拉","格雷罗"],
-                "DF":["巴洛伊","马查多","米勒","戴维斯"],
-                "MF":["戈多伊","库珀","马丁内斯","皮塔"],
-                "FW":["托雷斯","迪亚斯","罗德里格斯","布莱克本"]
-            }},
-            "乌兹别克斯坦": { group:"K组", players: {
-                "GK":["尤苏波夫","内马托夫","洛巴诺夫"],
-                "DF":["哈桑诺夫","胡桑诺夫","克罗皮夫","阿里库洛夫"],
-                "MF":["舒库罗夫","马沙里波夫","乌鲁诺夫","米尔赛多夫"],
-                "FW":["肖穆罗多夫","图尔贡博耶夫","阿卜杜霍利科夫","赛多夫"]
-            }},
-            "哥伦比亚": { group:"K组", players: {
-                "GK":["巴尔加斯","奥斯皮纳","金特罗"],
-                "DF":["米纳","桑切斯","莫希卡","库埃斯塔","戴尔"],
-                "MF":["夸德拉多","莱尔马","巴里奥斯","乌里韦"],
-                "FW":["迪亚斯","法尔考","穆列尔","博尔哈","萨帕塔"]
-            }},
-            "葡萄牙": { group:"K组", players: {
-                "GK":["科斯塔","帕特里西奥","若泽·萨"],
-                "DF":["佩佩","迪亚斯","坎塞洛","达洛特","门德斯"],
-                "MF":["费尔南德斯","席尔瓦","内维斯","维蒂尼亚","奥塔维奥"],
-                "FW":["莱奥","若塔","菲利克斯","拉莫斯","内托"]
-            }},
-            "刚果民主共和国": { group:"K组", players: {
-                "GK":["姆皮亚","基昂加","巴多"],
-                "DF":["马苏阿库","卡巴","姆本巴","隆班"],
-                "MF":["蒂斯兰","卡塞雷卡","穆莱卡","巴莫克"],
-                "FW":["瓦纳","巴坎布","姆巴约","卡库"]
-            }},
-            "捷克": { group:"A组", players: {
-                "GK":["瓦茨利克","科拉日","斯塔涅克"],
-                "DF":["卡德莱茨","克雷伊奇","切卢斯特卡","博日尔"],
-                "MF":["绍切克","巴拉克","达里达","扬克托","谢夫奇克"],
-                "FW":["希克","库彻塔","赫洛热克","切尔尼"]
-            }}
+            "墨西哥": {
+                group:"A组",
+                coach:"波切蒂诺 (Mauricio Pochettino)",
+                players:{
+                    "GK":[
+                        {name:"奥乔亚", club:"美洲", captain:false, injured:false},
+                        {name:"科塔", club:"墨西哥芝华士", captain:false, injured:false},
+                        {name:"马拉贡", club:"内卡萨", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"阿劳霍", club:"富勒姆(英格兰)", captain:false, injured:false},
+                        {name:"加利亚多", club:"蒙特雷", captain:false, injured:false},
+                        {name:"蒙特斯", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"巴斯克斯", club:"皇家贝蒂斯(西班牙)", captain:false, injured:false},
+                        {name:"阿特亚加", club:"墨西哥美洲", captain:false, injured:false},
+                        {name:"埃雷拉", club:"毕尔巴鄂(西班牙)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"瓜尔达多", club:"贝莱蒂科(墨西哥)", captain:true, injured:false},
+                        {name:"罗莫", club:"塞维利亚(西班牙)", captain:false, injured:false},
+                        {name:"阿尔瓦雷斯", club:"皇家社会(西班牙)", captain:false, injured:false},
+                        {name:"皮内达", club:"亚历山德里亚(意大利)", captain:false, injured:false},
+                        {name:"科尔多瓦", club:"蒙特雷", captain:false, injured:false},
+                        {name:"卡洛斯·罗德里格斯", club:"瓜达拉哈拉", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"希梅内斯", club:"富勒姆(英格兰)", captain:false, injured:false},
+                        {name:"洛萨诺", club:"那不勒斯(意大利)", captain:false, injured:true},
+                        {name:"安图尼亚", club:"墨西哥美洲", captain:false, injured:false},
+                        {name:"马丁", club:"格雷米奥(巴西)", captain:false, injured:false},
+                        {name:"贝加", club:"渥太华", captain:false, injured:false},
+                        {name:"马赛多", club:"河床(阿根廷)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "巴西": {
+                group:"C组",
+                coach:"多里瓦尔 (Dorival Jr.)",
+                players:{
+                    "GK":[
+                        {name:"阿利松", club:"利物浦(英格兰)", captain:false, injured:false},
+                        {name:"埃德森", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"韦弗顿", club:"帕尔梅拉斯", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"马尔基尼奥斯", club:"巴黎圣日耳曼(法国)", captain:true, injured:false},
+                        {name:"蒂亚戈·席尔瓦", club:"富勒姆(英格兰)", captain:false, injured:false},
+                        {name:"米利唐", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"达尼洛", club:"尤文图斯(意大利)", captain:false, injured:false},
+                        {name:"阿拉纳", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"扬·科托", club:"多特蒙德(德国)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"卡塞米罗", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"布鲁诺·吉马良斯", club:"纽卡斯尔(英格兰)", captain:false, injured:false},
+                        {name:"帕奎塔", club:"西汉姆联(英格兰)", captain:false, injured:false},
+                        {name:"乔林顿", club:"纽卡斯尔(英格兰)", captain:false, injured:false},
+                        {name:"安德烈", club:"弗鲁米嫩塞", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"维尼修斯", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"罗德里戈", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"拉菲尼亚", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"热苏斯", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"恩德里克", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"佩佩", club:"波尔图(葡萄牙)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "阿根廷": {
+                group:"J组",
+                coach:"斯卡洛尼 (Lionel Scaloni)",
+                players:{
+                    "GK":[
+                        {name:"马丁内斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
+                        {name:"鲁利", club:"阿贾克斯(荷兰)", captain:false, injured:false},
+                        {name:"阿尔马尼", club:"河床(阿根廷)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"莫利纳", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"罗梅罗", club:"热刺(英格兰)", captain:false, injured:false},
+                        {name:"奥塔门迪", club:"本菲卡(葡萄牙)", captain:false, injured:false},
+                        {name:"马丁内斯", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"阿库尼亚", club:"塞维利亚(西班牙)", captain:false, injured:false},
+                        {name:"塔利亚菲科", club:"里昂(法国)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"德保罗", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"麦卡利斯特", club:"利物浦(英格兰)", captain:false, injured:false},
+                        {name:"恩佐", club:"切尔西(英格兰)", captain:false, injured:false},
+                        {name:"洛塞尔索", club:"托特纳姆(英格兰)", captain:false, injured:false},
+                        {name:"帕雷德斯", club:"尤文图斯(意大利)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"梅西", club:"迈阿密国际(美国)", captain:true, injured:false},
+                        {name:"阿尔瓦雷斯", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"劳塔罗", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"迪马利亚", club:"本菲卡(葡萄牙)", captain:false, injured:false},
+                        {name:"尼古拉斯·冈萨雷斯", club:"尤文图斯(意大利)", captain:false, injured:false},
+                        {name:"乔瓦尼·洛塞尔索", club:"皇家贝蒂斯(西班牙)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "法国": {
+                group:"I组",
+                coach:"德尚 (Didier Deschamps)",
+                players:{
+                    "GK":[
+                        {name:"迈尼昂", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"阿雷奥拉", club:"西汉姆联(英格兰)", captain:false, injured:false},
+                        {name:"桑巴", club:"朗斯(法国)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"萨利巴", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"于帕梅卡诺", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"孔德", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"特奥·埃尔南德斯", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"帕瓦尔", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"费兰·门迪", club:"皇家马德里(西班牙)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"楚阿梅尼", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"卡马文加", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"格列兹曼", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"拉比奥特", club:"尤文图斯(意大利)", captain:true, injured:false},
+                        {name:"福法纳", club:"摩纳哥(法国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"姆巴佩", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"登贝莱", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"图拉姆", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"穆阿尼", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"科芒", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"吉鲁", club:"AC米兰(意大利)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "德国": {
+                group:"E组",
+                coach:"纳格尔斯曼 (Julian Nagelsmann)",
+                players:{
+                    "GK":[
+                        {name:"诺伊尔", club:"拜仁慕尼黑(德国)", captain:true, injured:false},
+                        {name:"特尔施特根", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"鲍曼", club:"霍芬海姆(德国)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"吕迪格", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"聚勒", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"塔", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"劳姆", club:"莱比锡红牛(德国)", captain:false, injured:false},
+                        {name:"基米希", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"科特", club:"勒沃库森(德国)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"克罗斯", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"京多安", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"穆西亚拉", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"维尔茨", club:"勒沃库森(德国)", captain:false, injured:false},
+                        {name:"格雷茨卡", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"安德里希", club:"勒沃库森(德国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"哈弗茨", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"穆勒", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"萨内", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"格纳布里", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"菲尔克鲁格", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"昂达夫", club:"勒沃库森(德国)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "英格兰": {
+                group:"L组",
+                coach:"图赫尔 (Thomas Tuchel)",
+                players:{
+                    "GK":[
+                        {name:"皮克福德", club:"埃弗顿(英格兰)", captain:false, injured:false},
+                        {name:"拉姆斯代尔", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"亨德森", club:"阿贾克斯(荷兰)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"沃克", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"斯通斯", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"马奎尔", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"肖", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"特里皮尔", club:"纽卡斯尔(英格兰)", captain:false, injured:false},
+                        {name:"格伊", club:"水晶宫(英格兰)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"贝林厄姆", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"赖斯", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"福登", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"萨卡", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"帕尔默", club:"切尔西(英格兰)", captain:false, injured:false},
+                        {name:"梅努", club:"曼联(英格兰)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"凯恩", club:"拜仁慕尼黑(德国)", captain:true, injured:false},
+                        {name:"拉什福德", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"沃特金斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
+                        {name:"鲍文", club:"西汉姆联(英格兰)", captain:false, injured:false},
+                        {name:"戈登", club:"纽卡斯尔(英格兰)", captain:false, injured:false},
+                        {name:"伊万·托尼", club:"布伦特福德(英格兰)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "西班牙": {
+                group:"H组",
+                coach:"德拉富恩特 (Luis de la Fuente)",
+                players:{
+                    "GK":[
+                        {name:"乌奈·西蒙", club:"毕尔巴鄂(西班牙)", captain:false, injured:false},
+                        {name:"拉亚", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"雷米罗", club:"皇家社会(西班牙)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"拉波尔特", club:"利雅得胜利(沙特)", captain:false, injured:false},
+                        {name:"罗德里", club:"曼城(英格兰)", captain:true, injured:false},
+                        {name:"纳乔", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"卡瓦哈尔", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"加亚", club:"瓦伦西亚(西班牙)", captain:false, injured:false},
+                        {name:"波罗", club:"热刺(英格兰)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"佩德里", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"加维", club:"巴塞罗那(西班牙)", captain:false, injured:true},
+                        {name:"鲁伊斯", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"略伦特", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"奥尔莫", club:"RB莱比锡(德国)", captain:false, injured:false},
+                        {name:"法比安", club:"巴黎圣日耳曼(法国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"莫拉塔", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"亚马尔", club:"巴塞罗那(西班牙)", captain:false, injured:true},
+                        {name:"威廉姆斯", club:"毕尔巴鄂(西班牙)", captain:false, injured:false},
+                        {name:"费兰·托雷斯", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"阿森西奥", club:"皇家社会(西班牙)", captain:false, injured:false},
+                        {name:"何塞卢", club:"皇家马德里(西班牙)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "荷兰": {
+                group:"F组",
+                coach:"科曼 (Ronald Koeman)",
+                players:{
+                    "GK":[
+                        {name:"维尔布鲁根", club:"布莱顿(英格兰)", captain:false, injured:false},
+                        {name:"弗莱肯", club:"布伦特福德(英格兰)", captain:false, injured:false},
+                        {name:"比佐特", club:"阿尔克马尔(荷兰)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"范戴克", club:"利物浦(英格兰)", captain:true, injured:false},
+                        {name:"阿克", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"德里赫特", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"邓弗里斯", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"范德文", club:"热刺(英格兰)", captain:false, injured:false},
+                        {name:"海廷加", club:"阿贾克斯(荷兰)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"德容", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"德容恩", club:"罗马(意大利)", captain:false, injured:false},
+                        {name:"西蒙斯", club:"莱比锡红牛(德国)", captain:false, injured:false},
+                        {name:"库普梅纳斯", club:"亚特兰大(意大利)", captain:false, injured:false},
+                        {name:"费尔曼", club:"埃因霍温(荷兰)", captain:false, injured:false},
+                        {name:"弗林蓬", club:"勒沃库森(德国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"加克波", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"德佩", club:"加拉塔萨雷(土耳其)", captain:false, injured:false},
+                        {name:"贝尔温", club:"阿贾克斯(荷兰)", captain:false, injured:false},
+                        {name:"韦格霍斯特", club:"霍芬海姆(德国)", captain:false, injured:false},
+                        {name:"马伦", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"布罗贝伊", club:"阿贾克斯(荷兰)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "葡萄牙": {
+                group:"K组",
+                coach:"马丁内斯 (Roberto Martínez)",
+                players:{
+                    "GK":[
+                        {name:"科斯塔", club:"波尔图(葡萄牙)", captain:false, injured:false},
+                        {name:"帕特里西奥", club:"罗马(意大利)", captain:false, injured:false},
+                        {name:"若泽·萨", club:"利雅得胜利(沙特)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"佩佩", club:"波尔图(葡萄牙)", captain:false, injured:false},
+                        {name:"迪亚斯", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"坎塞洛", club:"利雅得新月(沙特)", captain:false, injured:false},
+                        {name:"达洛特", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"门德斯", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"伊纳西奥", club:"葡体", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"费尔南德斯", club:"曼联(英格兰)", captain:true, injured:false},
+                        {name:"席尔瓦", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"内维斯", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"维蒂尼亚", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"奥塔维奥", club:"利雅得胜利(沙特)", captain:false, injured:false},
+                        {name:"B席", club:"曼城(英格兰)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"C罗", club:"利雅得胜利(沙特)", captain:false, injured:false},
+                        {name:"莱奥", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"若塔", club:"利雅得胜利(沙特)", captain:false, injured:false},
+                        {name:"菲利克斯", club:"切尔西(英格兰)", captain:false, injured:false},
+                        {name:"拉莫斯", club:"本菲卡(葡萄牙)", captain:false, injured:false},
+                        {name:"内托", club:"切尔西(英格兰)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "意大利": {
+                group:"E组",
+                coach:"斯帕莱蒂 (Luciano Spalletti)",
+                players:{
+                    "GK":[
+                        {name:"多纳鲁马", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"梅里特", club:"拉齐奥(意大利)", captain:false, injured:false},
+                        {name:"普罗维德尔", club:"拉齐奥(意大利)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"迪马尔科", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"巴斯托尼", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"布翁焦尔诺", club:"那不勒斯(意大利)", captain:false, injured:false},
+                        {name:"卡拉布里亚", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"斯皮纳佐拉", club:"罗马(意大利)", captain:false, injured:false},
+                        {name:"阿切尔比", club:"国际米兰(意大利)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"巴雷拉", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"若日尼奥", club:"阿森纳(英格兰)", captain:true, injured:false},
+                        {name:"托纳利", club:"纽卡斯尔(英格兰)", captain:false, injured:false},
+                        {name:"弗拉泰西", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"佩莱格里尼", club:"罗马(意大利)", captain:false, injured:false},
+                        {name:"里奇", club:"都灵(意大利)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"基耶萨", club:"那不勒斯(意大利)", captain:false, injured:false},
+                        {name:"拉斯帕多里", club:"那不勒斯(意大利)", captain:false, injured:false},
+                        {name:"斯卡马卡", club:"亚特兰大(意大利)", captain:false, injured:false},
+                        {name:"雷特吉", club:"热刺(英格兰)", captain:false, injured:false},
+                        {name:"小基耶萨", club:"尤文图斯(意大利)", captain:false, injured:false},
+                        {name:"奥卡福", club:"AC米兰(意大利)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "克罗地亚": {
+                group:"L组",
+                coach:"达利奇 (Zlatko Dalić)",
+                players:{
+                    "GK":[
+                        {name:"利瓦科维奇", club:"塞维利亚(西班牙)", captain:false, injured:false},
+                        {name:"拉布洛维奇", club:"里耶卡(克罗地亚)", captain:false, injured:false},
+                        {name:"伊武希奇", club:"奥西耶克(克罗地亚)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"格瓦迪奥尔", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"尤拉诺维奇", club:"诺丁汉森林(英格兰)", captain:false, injured:false},
+                        {name:"索萨", club:"阿贾克斯(荷兰)", captain:false, injured:false},
+                        {name:"舒塔洛", club:"佛罗伦萨(意大利)", captain:false, injured:false},
+                        {name:"蓬格拉契奇", club:"莱切(意大利)", captain:false, injured:false},
+                        {name:"埃尔里奇", club:"哈伊杜克(克罗地亚)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"莫德里奇", club:"皇家马德里(西班牙)", captain:true, injured:false},
+                        {name:"科瓦契奇", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"布罗佐维奇", club:"利雅得胜利(沙特)", captain:false, injured:false},
+                        {name:"帕萨利奇", club:"亚特兰大(意大利)", captain:false, injured:false},
+                        {name:"马耶尔", club:"莱比锡红牛(德国)", captain:false, injured:false},
+                        {name:"苏西奇", club:"萨尔茨堡红牛(奥地利)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"克拉马里奇", club:"霍芬海姆(德国)", captain:false, injured:false},
+                        {name:"佩里西奇", club:"霍芬海姆(德国)", captain:false, injured:false},
+                        {name:"布季米尔", club:"维罗纳(意大利)", captain:false, injured:false},
+                        {name:"奥尔西奇", club:"奥林匹亚科斯(希腊)", captain:false, injured:false},
+                        {name:"伊万努塞克", club:"萨格勒布迪纳摩(克罗地亚)", captain:false, injured:false},
+                        {name:"皮亚察", club:"里耶卡(克罗地亚)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "比利时": {
+                group:"G组",
+                coach:"特德斯科 (Domenico Tedesco)",
+                players:{
+                    "GK":[
+                        {name:"库尔图瓦", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"卡斯特尔斯", club:"狼堡(德国)", captain:false, injured:false},
+                        {name:"塞尔斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"阿尔德韦雷尔德", club:"安德莱赫特(比利时)", captain:false, injured:false},
+                        {name:"维尔通亨", club:"本菲卡(葡萄牙)", captain:false, injured:false},
+                        {name:"德巴", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"卡斯塔涅", club:"富勒姆(英格兰)", captain:false, injured:false},
+                        {name:"泰特", club:"勒沃库森(德国)", captain:false, injured:false},
+                        {name:"库卡", club:"布拉格斯拉夫人(捷克)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"德布劳内", club:"曼城(英格兰)", captain:true, injured:false},
+                        {name:"蒂莱曼斯", club:"维拉(英格兰)", captain:false, injured:false},
+                        {name:"瓦纳肯", club:"那不勒斯(意大利)", captain:false, injured:false},
+                        {name:"奥纳纳", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
+                        {name:"德凯特拉雷", club:"亚特兰大(意大利)", captain:false, injured:false},
+                        {name:"阿玛杜·奥纳纳", club:"里尔(法国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"卢卡库", club:"那不勒斯(意大利)", captain:false, injured:false},
+                        {name:"特罗萨德", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"多库", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"巴舒亚伊", club:"费内巴切(土耳其)", captain:false, injured:false},
+                        {name:"奥蓬达", club:"朗斯(法国)", captain:false, injured:false},
+                        {name:"费尔梅伦", club:"马德里竞技(西班牙)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "乌拉圭": {
+                group:"H组",
+                coach:"贝尔萨 (Marcelo Bielsa)",
+                players:{
+                    "GK":[
+                        {name:"罗切特", club:"国际米兰(意大利)", captain:false, injured:false},
+                        {name:"穆斯莱拉", club:"加拉塔萨雷(土耳其)", captain:false, injured:false},
+                        {name:"梅莱", club:"瓦斯科达伽马(巴西)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"戈丁", club:"河床(阿根廷)", captain:true, injured:false},
+                        {name:"阿劳霍", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"希门尼斯", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"奥利韦拉", club:"那不勒斯(意大利)", captain:false, injured:false},
+                        {name:"南德斯", club:"卡利亚里(意大利)", captain:false, injured:false},
+                        {name:"比尼亚", club:"罗马(意大利)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"巴尔韦德", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"本坦库尔", club:"热刺(英格兰)", captain:false, injured:false},
+                        {name:"贝西诺", club:"拉齐奥(意大利)", captain:false, injured:false},
+                        {name:"德拉克鲁兹", club:"博卡青年(阿根廷)", captain:false, injured:false},
+                        {name:"乌雷塔维斯卡亚", club:"瓦伦西亚(西班牙)", captain:false, injured:false},
+                        {name:"法昆多·佩利斯特里", club:"塞维利亚(西班牙)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"努涅斯", club:"利物浦(英格兰)", captain:false, injured:false},
+                        {name:"苏亚雷斯", club:"迈阿密国际(美国)", captain:false, injured:false},
+                        {name:"卡瓦尼", club:"博卡青年(阿根廷)", captain:false, injured:false},
+                        {name:"马克西·戈麦斯", club:"瓦伦西亚(西班牙)", captain:false, injured:false},
+                        {name:"M-卡贝扎斯", club:"河床(阿根廷)", captain:false, injured:false},
+                        {name:"阿劳霍", club:"布拉加(葡萄牙)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "日本": {
+                group:"F组",
+                coach:"森保一 (Hajime Moriyasu)",
+                players:{
+                    "GK":[
+                        {name:"铃木彩艳", club:"圣图尔登(比利时)", captain:false, injured:false},
+                        {name:"小hacq大迫敬介", club:"广岛三箭", captain:false, injured:false},
+                        {name:"谷晃生", club:"町田泽维亚", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"板仓滉", club:"门兴(德国)", captain:false, injured:false},
+                        {name:"富安健洋", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"长友佑都", club:"FC东京", captain:false, injured:false},
+                        {name:"酒井宏树", club:"利雅得青年(沙特)", captain:false, injured:false},
+                        {name:"伊藤洋辉", club:"斯图加特(德国)", captain:false, injured:false},
+                        {name:"桥岗大", club:"朗斯(法国)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"远藤航", club:"利物浦(英格兰)", captain:true, injured:false},
+                        {name:"镰田大地", club:"水晶宫(英格兰)", captain:false, injured:false},
+                        {name:"南野拓实", club:"摩纳哥(法国)", captain:false, injured:false},
+                        {name:"堂安律", club:"弗赖堡(德国)", captain:false, injured:false},
+                        {name:"守田英正", club:"布拉加(葡萄牙)", captain:false, injured:false},
+                        {name:"田中碧", club:"杜塞尔多夫(德国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"三笘薰", club:"布莱顿(英格兰)", captain:false, injured:false},
+                        {name:"前田大然", club:"凯尔特人(苏格兰)", captain:false, injured:false},
+                        {name:"上田绮世", club:"费耶诺德(荷兰)", captain:false, injured:false},
+                        {name:"伊东纯也", club:"兰斯(法国)", captain:false, injured:false},
+                        {name:"浅野拓磨", club:"波鸿(德国)", captain:false, injured:false},
+                        {name:"小川航基", club:"FC东京", captain:false, injured:false}
+                    ]
+                }
+            },
+            "韩国": {
+                group:"A组",
+                coach:"黄善洪 (Hwang Seon-hong)",
+                players:{
+                    "GK":[
+                        {name:"赵贤祐", club:"蔚山现代", captain:false, injured:false},
+                        {name:"金承奎", club:"利雅得胜利(沙特)", captain:false, injured:false},
+                        {name:"宋范根", club:"德乙", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"金玟哉", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"金英权", club:"蔚山现代", captain:false, injured:false},
+                        {name:"金太焕", club:"蔚山现代", captain:false, injured:false},
+                        {name:"薛英佑", club:"费内巴切(土耳其)", captain:false, injured:false},
+                        {name:"李记帝", club:"FC东京", captain:false, injured:false},
+                        {name:"郑升炫", club:"蔚山现代", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"李刚仁", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"黄仁范", club:"贝尔格莱德红星(塞尔维亚)", captain:false, injured:false},
+                        {name:"孙兴慜", club:"热刺(英格兰)", captain:true, injured:false},
+                        {name:"李在城", club:"美因茨(德国)", captain:false, injured:false},
+                        {name:"朴镕宇", club:"艾因(阿联酋)", captain:false, injured:false},
+                        {name:"郑优营", club:"弗赖堡(德国)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"黄喜灿", club:"狼队(英格兰)", captain:false, injured:false},
+                        {name:"曹圭成", club:"中日德兰(丹麦)", captain:false, injured:false},
+                        {name:"吴贤揆", club:"布莱顿(英格兰)", captain:false, injured:false},
+                        {name:"黄义助", club:"诺丁汉森林(英格兰)", captain:false, injured:true},
+                        {name:"朱玟奎", club:"FC东京", captain:false, injured:false},
+                        {name:"严原上", club:"光州FC", captain:false, injured:false}
+                    ]
+                }
+            },
+            "摩洛哥": {
+                group:"C组",
+                coach:"雷格拉吉 (Walid Regragui)",
+                players:{
+                    "GK":[
+                        {name:"布努", club:"利雅得新月(沙特)", captain:false, injured:false},
+                        {name:"穆尼尔", club:"西班牙人(西班牙)", captain:false, injured:false},
+                        {name:"卡约维", club:"扎马雷克(埃及)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"阿什拉夫", club:"巴黎圣日耳曼(法国)", captain:true, injured:false},
+                        {name:"赛斯", club:"狼队(英格兰)", captain:false, injured:false},
+                        {name:"阿格尔德", club:"西汉姆联(英格兰)", captain:false, injured:false},
+                        {name:"马兹拉维", club:"曼联(英格兰)", captain:false, injured:false},
+                        {name:"亚米克", club:"皇家社会(西班牙)", captain:false, injured:false},
+                        {name:"达里", club:"布雷斯特(法国)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"阿姆拉巴特", club:"佛罗伦萨(意大利)", captain:false, injured:false},
+                        {name:"奥纳西", club:"马德里竞技(西班牙)", captain:false, injured:false},
+                        {name:"阿马拉", club:"皇家贝蒂斯(西班牙)", captain:false, injured:false},
+                        {name:"艾尔哈努斯", club:"塞维利亚(西班牙)", captain:false, injured:false},
+                        {name:"本纳塞尔", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"阿明·哈里特", club:"阿斯顿维拉(英格兰)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"齐耶赫", club:"加拉塔萨雷(土耳其)", captain:false, injured:false},
+                        {name:"恩内斯里", club:"费内巴切(土耳其)", captain:false, injured:false},
+                        {name:"布法尔", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
+                        {name:"阿布德", club:"皇家社会(西班牙)", captain:false, injured:false},
+                        {name:"哈里特", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
+                        {name:"谢迪拉", club:"本菲卡(葡萄牙)", captain:false, injured:false}
+                    ]
+                }
+            },
+            "美国": {
+                group:"D组",
+                coach:"波普 (Gregg Berhalter)",
+                players:{
+                    "GK":[
+                        {name:"特纳", club:"诺丁汉森林(英格兰)", captain:false, injured:false},
+                        {name:"霍瓦特", club:"标准列日(比利时)", captain:false, injured:false},
+                        {name:"约翰逊", club:"纽卡斯尔喷气机(澳大利亚)", captain:false, injured:false}
+                    ],
+                    "DF":[
+                        {name:"亚当斯", club:"利兹联(英格兰)", captain:false, injured:false},
+                        {name:"理查兹", club:"水晶宫(英格兰)", captain:false, injured:false},
+                        {name:"罗宾逊", club:"富勒姆(英格兰)", captain:true, injured:false},
+                        {name:"斯卡利", club:"勒沃库森(德国)", captain:false, injured:false},
+                        {name:"克里斯托弗·隆", club:"沙尔克04(德国)", captain:false, injured:false},
+                        {name:"奥斯汀", club:"雷恩(法国)", captain:false, injured:false}
+                    ],
+                    "MF":[
+                        {name:"麦肯尼", club:"尤文图斯(意大利)", captain:false, injured:false},
+                        {name:"穆萨", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"蒂莱曼斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
+                        {name:"德拉托雷", club:"塞维利亚(西班牙)", captain:false, injured:false},
+                        {name:"阿科斯塔", club:"洛杉矶FC(美国)", captain:false, injured:false},
+                        {name:"罗尔丹", club:"AC米兰(意大利)", captain:false, injured:false}
+                    ],
+                    "FW":[
+                        {name:"普利西奇", club:"AC米兰(意大利)", captain:false, injured:false},
+                        {name:"维阿", club:"里尔(法国)", captain:false, injured:false},
+                        {name:"雷纳", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"佩皮", club:"罗马(意大利)", captain:false, injured:false},
+                        {name:"萨金特", club:"埃弗顿(英格兰)", captain:false, injured:false},
+                        {name:"阿伦森", club:"利兹联(英格兰)", captain:false, injured:false}
+                    ]
+                }
+            }
+        };
         };
 
         // ===== 初始化 =====
@@ -1120,7 +1527,7 @@
                                 </div>
                             </div>
                         </div>
-                        ${match.venue ? `<div class="match-venue"><a href="https://map.baidu.com/search/${encodeURIComponent(match.venue)}" target="_blank" rel="noopener">📍 ${match.venue}</a></div>` : ''}
+                        ${match.venue ? `<div class="match-venue"><a class="venue-map-link" href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${match.venue}</a></div>` : ''}
                     </div>
                 `;
             });
@@ -1137,7 +1544,7 @@
                 const isFinal = round.round.includes('冠军');
                 html += `<div class="round"><div class="round-title ${isFinal ? 'final' : ''}">${round.round}</div>`;
                 round.matches.forEach(match => {
-                    const venueLink = match.venue ? `<div class="match-venue-ko"><a href="https://map.baidu.com/search/${encodeURIComponent(match.venue)}" target="_blank" rel="noopener">📍 ${match.venue}</a></div>` : '';
+                    const venueLink = match.venue ? `<div class="match-venue-ko"><a href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener" style="color:#667eea;text-decoration:none;">📍 ${match.venue}</a></div>` : '';
                     html += `
                         <div class="match-node ${match.isFinal ? 'final' : ''}">
                             <div class="match-time">🕐 ${match.date}<span class="match-code">${match.code}</span></div>
@@ -1199,14 +1606,22 @@
                         <span class="squad-country-name">${country}</span>
                         <span class="squad-group-tag">${data.group}</span>
                     </div>
+                    ${data.coach ? `<div class="squad-coach-info"><span class="coach-label">🧑‍🏫 主教练：</span><span class="coach-name">${data.coach}</span></div>` : ''}
             `;
             for (const [pos, players] of Object.entries(data.players)) {
                 html += `<div class="squad-pos-title">${posMap[pos] || pos}</div>`;
-                html += '<div class="squad-players">';
                 players.forEach((p, i) => {
-                    html += `<div class="squad-player"><span class="player-number">${i+1}</span><span class="player-name">${p}</span></div>`;
+                    const captainTag = p.captain ? '<span class="player-captain">C</span>' : '';
+                    const injuredTag = p.injured ? '<span class="player-injured">伤</span>' : '';
+                    const clubName = p.club ? `<span class="player-club">${p.club}</span>` : '';
+                    html += `
+                        <div class="squad-player-row">
+                            <span class="player-number">${i+1}</span>
+                            <span class="player-name">${p.name}${captainTag}${injuredTag}</span>
+                            ${clubName}
+                        </div>
+                    `;
                 });
-                html += '</div>';
             }
             html += '</div>';
             detail.innerHTML = html;
@@ -1300,7 +1715,7 @@
                 html += `<div style="display:flex;flex-direction:column;justify-content:space-around;height:${wrapH}px;flex:1;">`;
                 round.matches.forEach(m => {
                     const venueLink = m.venue
-                        ? `<a href="https://map.baidu.com/search/${encodeURIComponent(m.venue)}" target="_blank" rel="noopener" style="font-size:10px;color:#667eea;">📍 ${m.venue}</a>`
+                        ? `<a href="${getBaiduMapUrl(m.venue)}" target="_blank" rel="noopener" style="font-size:10px;color:#667eea;text-decoration:none;">📍 ${m.venue}</a>`
                         : '';
                     html += `
                         <div class="bracket-match ${m.isFinal?'bracket-match-final':''}">
