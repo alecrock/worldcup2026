@@ -1473,18 +1473,27 @@
         let _initDone = false;
         // ===== 初始化 =====
         function init() {
-            if (_initDone) return;
+            if (_initDone) {
+                console.log('init() 已执行过，跳过');
+                return;
+            }
             _initDone = true;
-            console.log('init() 开始执行');
+            console.log('init() 开始执行...');
             try {
+                console.log('1. 渲染小组赛结构...');
                 renderGroupSection();
+                console.log('2. 渲染小组赛筛选按钮...');
                 renderGroupFilter();
+                console.log('3. 渲染小组赛赛程...');
                 renderGroupMatches('all');
+                console.log('4. 渲染淘汰赛...');
                 renderKnockoutSection();
+                console.log('5. 渲染球队阵容...');
                 renderSquadSection();
-                console.log('init() 执行完成');
+                console.log('✅ init() 全部执行完成！');
             } catch (e) {
-                console.error('Init error:', e);
+                console.error('❌ Init error:', e);
+                alert('页面初始化出错: ' + e.message);
             }
         }
 
@@ -1826,11 +1835,30 @@
             }, 100);
         }
 
-        // 使用 DOMContentLoaded 而不是 window.onload，避免等待外部资源
-        document.addEventListener('DOMContentLoaded', function() {
-            init();
-            initWechatTip();
-        });
+        // 多重初始化保障
+        (function safeInit() {
+            // 立即尝试执行
+            if (typeof init === 'function') {
+                try {
+                    init();
+                    initWechatTip();
+                    console.log('初始化成功');
+                } catch(e) {
+                    console.error('初始化错误:', e);
+                }
+            } else {
+                // 如果 init 还未定义，等待 DOM 解析完成
+                document.addEventListener('DOMContentLoaded', function() {
+                    try {
+                        init();
+                        initWechatTip();
+                        console.log('DOMContentLoaded 初始化成功');
+                    } catch(e) {
+                        console.error('DOMContentLoaded 初始化错误:', e);
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>
