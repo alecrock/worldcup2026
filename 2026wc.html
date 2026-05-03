@@ -655,9 +655,24 @@
             <div class="tab active" onclick="switchTab('squad', this)">球队阵容</div>
         </div>
         <div class="content">
-            <div id="groupSection" class="section"></div>
-            <div id="knockoutSection" class="section"></div>
-            <div id="squadSection" class="section active"></div>
+            <div id="groupSection" class="section">
+                <div style="padding:20px;text-align:center;color:#999;">
+                    <p>⏳ 正在加载小组赛数据...</p>
+                    <button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">刷新页面</button>
+                </div>
+            </div>
+            <div id="knockoutSection" class="section">
+                <div style="padding:20px;text-align:center;color:#999;">
+                    <p>⏳ 正在加载淘汰赛数据...</p>
+                    <button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">刷新页面</button>
+                </div>
+            </div>
+            <div id="squadSection" class="section active">
+                <div style="padding:20px;text-align:center;color:#999;">
+                    <p>⏳ 正在加载球队阵容数据...</p>
+                    <button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">刷新页面</button>
+                </div>
+            </div>
         </div>
     </div>
     <button class="export-btn" onclick="exportImage()">📷 保存图片</button>
@@ -1837,26 +1852,46 @@
 
         // 多重初始化保障
         (function safeInit() {
+            // 设置超时检测
+            setTimeout(function() {
+                if (!_initDone) {
+                    console.warn('⚠️ 初始化超时，尝试备用方案...');
+                    // 备用方案：手动触发初始化
+                    try {
+                        init();
+                    } catch(e) {
+                        console.error('备用方案也失败:', e);
+                        // 显示错误提示
+                        document.querySelectorAll('.section').forEach(function(s) {
+                            s.innerHTML = '<div style="padding:20px;text-align:center;color:#e53;">❌ 页面加载失败<br><br><button onclick="location.reload()" style="padding:10px 20px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">点击刷新</button></div>';
+                        });
+                    }
+                }
+            }, 3000); // 3秒超时
+
             // 立即尝试执行
             if (typeof init === 'function') {
                 try {
                     init();
                     initWechatTip();
-                    console.log('初始化成功');
+                    console.log('✅ 初始化成功');
                 } catch(e) {
-                    console.error('初始化错误:', e);
+                    console.error('❌ 初始化错误:', e);
                 }
             } else {
-                // 如果 init 还未定义，等待 DOM 解析完成
-                document.addEventListener('DOMContentLoaded', function() {
-                    try {
-                        init();
-                        initWechatTip();
-                        console.log('DOMContentLoaded 初始化成功');
-                    } catch(e) {
-                        console.error('DOMContentLoaded 初始化错误:', e);
+                console.error('❌ init 函数未定义！');
+                // 等待一小段时间后重试
+                setTimeout(function() {
+                    if (typeof init === 'function') {
+                        try {
+                            init();
+                            initWechatTip();
+                            console.log('✅ 延迟初始化成功');
+                        } catch(e) {
+                            console.error('❌ 延迟初始化错误:', e);
+                        }
                     }
-                });
+                }, 500);
             }
         })();
     </script>
