@@ -1470,13 +1470,22 @@
         };
         };
 
+        let _initDone = false;
         // ===== 初始化 =====
         function init() {
-            renderGroupSection();
-            renderGroupFilter();
-            renderGroupMatches('all');
-            renderKnockoutSection();
-            renderSquadSection();
+            if (_initDone) return;
+            _initDone = true;
+            console.log('init() 开始执行');
+            try {
+                renderGroupSection();
+                renderGroupFilter();
+                renderGroupMatches('all');
+                renderKnockoutSection();
+                renderSquadSection();
+                console.log('init() 执行完成');
+            } catch (e) {
+                console.error('Init error:', e);
+            }
         }
 
         // ===== 小组赛 =====
@@ -1817,10 +1826,11 @@
             }, 100);
         }
 
-        window.onload = function() {
+        // 使用 DOMContentLoaded 而不是 window.onload，避免等待外部资源
+        document.addEventListener('DOMContentLoaded', function() {
             init();
             initWechatTip();
-        };
+        });
     </script>
 </body>
 </html>
