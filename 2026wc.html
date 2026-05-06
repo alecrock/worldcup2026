@@ -205,20 +205,23 @@
         .venue-map-link {
             color: #667eea;
             text-decoration: none;
-            padding: 3px 8px;
+            padding: 5px 10px;
             background: #f0f3ff;
             border-radius: 4px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            font-size: 11px;
+            font-size: 12px;
             transition: all 0.2s;
+            min-height: 36px; /* 移动端触摸友好 */
+            cursor: pointer;
         }
-        .venue-map-link:hover {
+        .venue-map-link:hover,
+        .venue-map-link:active {
             background: #667eea;
             color: white;
         }
-        .venue-map-link svg { width: 12px; height: 12px; }
+        .venue-map-link svg { width: 13px; height: 13px; flex-shrink: 0; }
         .match-venue { text-align: center; margin-top: 8px; }
 
         /* 天气显示 */
@@ -718,7 +721,7 @@
             "葡萄牙":"🇵🇹","刚果民主共和国":"🇨🇩"
         };
 
-        // ===== 场馆经纬度坐标（WGS84，已转为百度BD-09格式） =====
+        // ===== 场馆经纬度坐标（WGS84，与GCJ-02差异极小，腾讯/百度地图均可直接使用） =====
         // WGS84->GCJ-02->BD-09 转换公式
         const venueCoordinates = {
             // 墨西哥
@@ -842,16 +845,30 @@
             return null;
         }
 
-        // 生成带坐标的百度地图链接（精确坐标定位）
+        // 检测是否为移动端（手机浏览器/APP内嵌WebView）
+        function isMobile() {
+            return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                || /MicroMessenger|WeChat|TikTok|Douyin|QQbrowser/i.test(navigator.userAgent);
+        }
+
+        // 生成地图链接：优先腾讯地图（微信等APP内嵌浏览器兼容性最佳）
+        // PC端保留百度地图作为备选
         function getBaiduMapUrl(venueName) {
             const found = getVenueCoord(venueName);
-            if (found) {
-                const { name, coord } = found;
-                // 使用百度地图精确坐标定位URL（BD-09坐标系）
-                return `https://map.baidu.com/?latlng=${coord.lat},${coord.lng}&title=${encodeURIComponent(name)}&content=${encodeURIComponent(venueName)}&autoOpen=true&zoom=16`;
+            if (!found) {
+                return `https://map.baidu.com/search/${encodeURIComponent(venueName)}`;
             }
-            // fallback 到搜索
-            return `https://map.baidu.com/search/${encodeURIComponent(venueName)}`;
+            const { name, coord } = found;
+            const lat = coord.lat.toFixed(6);
+            const lng = coord.lng.toFixed(6);
+            if (isMobile()) {
+                // 腾讯地图 Web URL（自动调起手机腾讯地图App）
+                // 格式：https://lbs.qq.com/?showLocation=lat,lng&addrType=latLng
+                return `https://lbs.qq.com/?showLocation=${lat},${lng}&addrType=latLng&title=${encodeURIComponent(name)}&content=${encodeURIComponent(venueName)}`;
+            } else {
+                // PC端：百度地图精确坐标
+                return `https://map.baidu.com/?latlng=${lat},${lng}&title=${encodeURIComponent(name)}&content=${encodeURIComponent(venueName)}&autoOpen=true&zoom=16`;
+            }
         }
 
         function getFlag(name) { return FLAGS[name] || ""; }
