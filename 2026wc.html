@@ -851,8 +851,30 @@
                 || /MicroMessenger|WeChat|TikTok|Douyin|QQbrowser/i.test(navigator.userAgent);
         }
 
-        // 生成地图链接：优先腾讯地图（微信等APP内嵌浏览器兼容性最佳）
-        // PC端保留百度地图作为备选
+        // 尝试用 URL Scheme 调起腾讯地图 App
+        // 成功后页面会切走，不会有视觉反馈；失败时执行 fallback
+        function tryOpenTencentMap(lat, lng, name, venueName) {
+            // 腾讯地图 URL Scheme，直接打开 App 并定位到坐标
+            const appUrl = `qqmap://page/map?center=${lng},${lat}&zoom=16&title=${encodeURIComponent(name)}&addr=${encodeURIComponent(venueName)}&coord_type=gcj02`;
+            const webUrl  = `https://map.qq.com/?center=${lng},${lat}&zoom=16&key=&referer=myApp`;
+
+            const timer = setTimeout(() => {
+                // 超过 800ms 没响应说明 App 没装或被拦截 → 跳转网页版
+                window.location.href = webUrl;
+            }, 800);
+
+            window.location.href = appUrl; // 尝试调起 App
+
+            // 若用户手动返回（timer 可能未触发），不再重复跳转
+            window.addEventListener('visibilitychange', function handler() {
+                if (document.visibilityState === 'visible') {
+                    clearTimeout(timer);
+                    window.removeEventListener('visibilitychange', handler);
+                }
+            });
+        }
+
+        // 生成地图链接：PC端百度，微信/手机直接调起腾讯地图App
         function getBaiduMapUrl(venueName) {
             const found = getVenueCoord(venueName);
             if (!found) {
@@ -862,9 +884,8 @@
             const lat = coord.lat.toFixed(6);
             const lng = coord.lng.toFixed(6);
             if (isMobile()) {
-                // 腾讯地图 Web URL（自动调起手机腾讯地图App）
-                // 格式：https://lbs.qq.com/?showLocation=lat,lng&addrType=latLng
-                return `https://lbs.qq.com/?showLocation=${lat},${lng}&addrType=latLng&title=${encodeURIComponent(name)}&content=${encodeURIComponent(venueName)}`;
+                // 返回伪 URL，onclick 用 JS 调起 App
+                return `javascript:void(tryOpenTencentMap(${lat},${lng},'${name.replace(/'/g,"\\'")}','${venueName.replace(/'/g,"\\'")}'))`;
             } else {
                 // PC端：百度地图精确坐标
                 return `https://map.baidu.com/?latlng=${lat},${lng}&title=${encodeURIComponent(name)}&content=${encodeURIComponent(venueName)}&autoOpen=true&zoom=16`;
@@ -872,6 +893,11 @@
         }
 
         function getFlag(name) { return FLAGS[name] || ""; }
+
+        // 场馆链接的 target 属性：PC端新标签页，移动端当前窗口（URL Scheme 需要）
+        function getVenueTarget() {
+            return isMobile() ? '' : ' target="_blank" rel="noopener"';
+        }
 
         // ===== 小组赛数据（含场地） =====
         const groupMatches = [
@@ -1706,7 +1732,7 @@
                                 </div>
                             </div>
                         </div>
-                        ${match.venue ? `<div class="venue-weather-row"><a class="venue-map-link" href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${match.venue}</a><span class="match-weather-loading" data-weather-venue="${match.venue.replace(/"/g,'&quot;')}" data-weather-date="${match.date.replace(/"/g,'&quot;')}">⏳</span></div>` : ''}
+                        ${match.venue ? `<div class="venue-weather-row"><a class="venue-map-link" href="${getBaiduMapUrl(match.venue)}"${getVenueTarget()}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${match.venue}</a><span class="match-weather-loading" data-weather-venue="${match.venue.replace(/"/g,'&quot;')}" data-weather-date="${match.date.replace(/"/g,'&quot;')}">⏳</span></div>` : ''}
                     </div>
                 `;
             });
@@ -1723,7 +1749,7 @@
                 const isFinal = round.round.includes('冠军');
                 html += `<div class="round"><div class="round-title ${isFinal ? 'final' : ''}">${round.round}</div>`;
                 round.matches.forEach(match => {
-                    const venueLink = match.venue ? `<div class="match-venue-ko" style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;"><a href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener" style="color:#667eea;text-decoration:none;">📍 ${match.venue}</a><span class="match-weather-loading" data-weather-venue="${match.venue.replace(/"/g,'&quot;')}" data-weather-date="${match.date.replace(/"/g,'&quot;')}">⏳</span></div>` : '';
+                    const venueLink = match.venue ? `<div class="match-venue-ko" style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;"><a href="${getBaiduMapUrl(match.venue)}"${getVenueTarget()} style="color:#667eea;text-decoration:none;">📍 ${match.venue}</a><span class="match-weather-loading" data-weather-venue="${match.venue.replace(/"/g,'&quot;')}" data-weather-date="${match.date.replace(/"/g,'&quot;')}">⏳</span></div>` : '';
                     html += `
                         <div class="match-node ${match.isFinal ? 'final' : ''}">
                             <div class="match-time">🕐 ${match.date}<span class="match-code">${match.code}</span></div>
