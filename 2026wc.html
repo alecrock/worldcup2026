@@ -221,6 +221,32 @@
         .venue-map-link svg { width: 12px; height: 12px; }
         .match-venue { text-align: center; margin-top: 8px; }
 
+        /* 天气显示 */
+        .match-weather {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #555;
+            background: #f0f8ff;
+            border-radius: 4px;
+            padding: 2px 7px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .match-weather .weather-icon { font-size: 14px; line-height: 1; }
+        .match-weather .weather-temp { font-weight: bold; color: #333; }
+        .match-weather .weather-desc { color: #777; }
+        .match-weather-loading { color: #bbb; font-size: 10px; }
+        .venue-weather-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
         @media (max-width: 414px) {
 
         /* 淘汰赛场地 */
@@ -716,13 +742,113 @@
             "BC Place":                 { lat: 49.2769,  lng: -123.1121 }
         };
 
-        // 生成带坐标的百度地图链接
+        // ===== 天气功能 =====
+        // Open-Meteo 免费天气API（无需API Key）
+        // WMO天气码转描述和图标
+        const WMO_CODES = {
+            0:  {desc:'晴天',     icon:'☀️'},
+            1:  {desc:'基本晴',   icon:'🌤️'},
+            2:  {desc:'局部多云', icon:'⛅'},
+            3:  {desc:'阴天',     icon:'☁️'},
+            45: {desc:'有雾',     icon:'🌫️'},
+            48: {desc:'雾凇',     icon:'🌫️'},
+            51: {desc:'小毛毛雨', icon:'🌦️'},
+            53: {desc:'毛毛雨',   icon:'🌦️'},
+            55: {desc:'大毛毛雨', icon:'🌧️'},
+            61: {desc:'小雨',     icon:'🌧️'},
+            63: {desc:'中雨',     icon:'🌧️'},
+            65: {desc:'大雨',     icon:'🌧️'},
+            71: {desc:'小雪',     icon:'🌨️'},
+            73: {desc:'中雪',     icon:'❄️'},
+            75: {desc:'大雪',     icon:'❄️'},
+            80: {desc:'阵雨',     icon:'🌦️'},
+            81: {desc:'中阵雨',   icon:'🌧️'},
+            82: {desc:'强阵雨',   icon:'⛈️'},
+            95: {desc:'雷雨',     icon:'⛈️'},
+            96: {desc:'雷暴',     icon:'⛈️'},
+            99: {desc:'强雷暴',   icon:'⛈️'}
+        };
+
+        // 天气缓存，key=`${lat},${lng},${dateStr}`
+        const weatherCache = {};
+
+        // 解析比赛日期字符串，返回 "YYYY-MM-DD"
+        function parseMatchDate(dateStr) {
+            // dateStr格式示例："6月11日 凌晨1:00" / "7月20日 上午8:00"
+            const m = dateStr.match(/(\d+)月(\d+)日/);
+            if (!m) return null;
+            const month = String(m[1]).padStart(2, '0');
+            const day   = String(m[2]).padStart(2, '0');
+            return `2026-${month}-${day}`;
+        }
+
+        // 从Open-Meteo获取指定坐标+日期的天气
+        async function fetchWeather(lat, lng, dateStr) {
+            const key = `${lat},${lng},${dateStr}`;
+            if (weatherCache[key]) return weatherCache[key];
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${dateStr}&end_date=${dateStr}&forecast_days=16`;
+                const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const json = await resp.json();
+                const daily = json.daily;
+                if (!daily || !daily.time || daily.time.length === 0) return null;
+                const idx = daily.time.indexOf(dateStr);
+                if (idx === -1) return null;
+                const code = daily.weathercode[idx];
+                const maxT = Math.round(daily.temperature_2m_max[idx]);
+                const minT = Math.round(daily.temperature_2m_min[idx]);
+                const info = WMO_CODES[code] || {desc:'未知', icon:'🌡️'};
+                const result = { icon: info.icon, desc: info.desc, max: maxT, min: minT };
+                weatherCache[key] = result;
+                return result;
+            } catch(e) {
+                return null;
+            }
+        }
+
+        // 渲染单个天气气泡到指定元素
+        async function loadWeatherForElement(el, venueName, dateStr) {
+            const found = getVenueCoord(venueName);
+            if (!found) { el.style.display='none'; return; }
+            const date = parseMatchDate(dateStr);
+            if (!date) { el.style.display='none'; return; }
+            const w = await fetchWeather(found.coord.lat, found.coord.lng, date);
+            if (!w) { el.style.display='none'; return; }
+            // 替换整个span为天气badge
+            el.outerHTML = `<span class="match-weather"><span class="weather-icon">${w.icon}</span><span class="weather-temp">${w.max}°/${w.min}°</span><span class="weather-desc">${w.desc}</span></span>`;
+        }
+
+        // 批量加载所有天气（页面初始化后调用）
+        function loadAllWeather() {
+            // 查找所有待加载天气的占位元素
+            const els = Array.from(document.querySelectorAll('[data-weather-venue]'));
+            // 分批加载，避免同时发起太多请求
+            els.forEach((el, i) => {
+                const venue = el.getAttribute('data-weather-venue');
+                const date  = el.getAttribute('data-weather-date');
+                setTimeout(() => loadWeatherForElement(el, venue, date), i * 80);
+            });
+        }
+
+        // 从venue字符串中查找匹配的坐标
+        function getVenueCoord(venueName) {
+            // 遍历所有已知球场名称，检查venue字符串是否包含该名称
+            for (const key of Object.keys(venueCoordinates)) {
+                if (venueName.includes(key)) {
+                    return { name: key, coord: venueCoordinates[key] };
+                }
+            }
+            return null;
+        }
+
+        // 生成带坐标的百度地图链接（精确坐标定位）
         function getBaiduMapUrl(venueName) {
-            // 提取体育场英文名
-            const stadiumName = venueName.split(' ').slice(-1)[0];
-            const coord = venueCoordinates[stadiumName];
-            if (coord) {
-                return `https://map.baidu.com/marker?location=${coord.lat},${coord.lng}&title=${encodeURIComponent(stadiumName)}&content=${encodeURIComponent(venueName)}&lng=${coord.lng}&lat=${coord.lat}&缩放等级=16`;
+            const found = getVenueCoord(venueName);
+            if (found) {
+                const { name, coord } = found;
+                // 使用百度地图精确坐标定位URL（BD-09坐标系）
+                return `https://map.baidu.com/?latlng=${coord.lat},${coord.lng}&title=${encodeURIComponent(name)}&content=${encodeURIComponent(venueName)}&autoOpen=true&zoom=16`;
             }
             // fallback 到搜索
             return `https://map.baidu.com/search/${encodeURIComponent(venueName)}`;
@@ -1505,6 +1631,8 @@
                 console.log('5. 渲染球队阵容...');
                 renderSquadSection();
                 console.log('✅ init() 全部执行完成！');
+                // 异步加载天气（不阻塞主流程）
+                setTimeout(loadAllWeather, 300);
             } catch (e) {
                 console.error('❌ Init error:', e);
                 alert('页面初始化出错: ' + e.message);
@@ -1531,6 +1659,8 @@
             document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderGroupMatches(group);
+            // 重新加载天气（筛选后DOM重建）
+            setTimeout(loadAllWeather, 100);
         }
 
         function renderGroupMatches(filter) {
@@ -1559,7 +1689,7 @@
                                 </div>
                             </div>
                         </div>
-                        ${match.venue ? `<div class="match-venue"><a class="venue-map-link" href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${match.venue}</a></div>` : ''}
+                        ${match.venue ? `<div class="venue-weather-row"><a class="venue-map-link" href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${match.venue}</a><span class="match-weather-loading" data-weather-venue="${match.venue.replace(/"/g,'&quot;')}" data-weather-date="${match.date.replace(/"/g,'&quot;')}">⏳</span></div>` : ''}
                     </div>
                 `;
             });
@@ -1576,7 +1706,7 @@
                 const isFinal = round.round.includes('冠军');
                 html += `<div class="round"><div class="round-title ${isFinal ? 'final' : ''}">${round.round}</div>`;
                 round.matches.forEach(match => {
-                    const venueLink = match.venue ? `<div class="match-venue-ko"><a href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener" style="color:#667eea;text-decoration:none;">📍 ${match.venue}</a></div>` : '';
+                    const venueLink = match.venue ? `<div class="match-venue-ko" style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;"><a href="${getBaiduMapUrl(match.venue)}" target="_blank" rel="noopener" style="color:#667eea;text-decoration:none;">📍 ${match.venue}</a><span class="match-weather-loading" data-weather-venue="${match.venue.replace(/"/g,'&quot;')}" data-weather-date="${match.date.replace(/"/g,'&quot;')}">⏳</span></div>` : '';
                     html += `
                         <div class="match-node ${match.isFinal ? 'final' : ''}">
                             <div class="match-time">🕐 ${match.date}<span class="match-code">${match.code}</span></div>
