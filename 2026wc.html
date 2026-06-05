@@ -981,116 +981,129 @@
 
         // ===== 咪咕体育APP唤起（增强版：直达比赛页面） =====
         function openMiguMatch(homeTeam, awayTeam) {
-            const keyword = encodeURIComponent(`${homeTeam} vs ${awayTeam} 2026世界杯`);
-            // 尝试多种URL Scheme唤起咪咕体育APP直达比赛页
+            const keyword = `${homeTeam} vs ${awayTeam} 2026世界杯`;
+            const encodedKeyword = encodeURIComponent(keyword);
+            // 咪咕视频APP直播搜索页（多种scheme尝试）
             const appSchemes = [
-                `migusportsscheme://search?keyword=${keyword}`,
-                `miguvideo://search?keyword=${keyword}`,
-                `mgvideo://search?keyword=${keyword}`,
-                `migusportsscheme://home`
+                // 方案1: miguvideo:// JUMP_DETAIL_PAGE 直达详情/直播页
+                `miguvideo://miguvideo?action=${encodeURIComponent(JSON.stringify({"type":"JUMP_SEARCH","params":{"keyword":encodedKeyword}}))}`,
+                // 方案2: 咪咕体育 scheme 搜索
+                `migusportsscheme://search?keyword=${encodedKeyword}&type=match`,
+                // 方案3: 通用搜索
+                `miguvideo://search?keyword=${encodedKeyword}`
             ];
-            let fallbackUrl = 'https://sports.migu.cn/v2/detail/?q=' + keyword;
-            let handled = false;
+            let fallbackUrl = 'https://www.migu.cn/search?keyword=' + encodedKeyword;
 
-            for (let i = 0; i < appSchemes.length; i++) {
+            // iframe方式尝试唤起APP
+            let triggered = false;
+            appSchemes.forEach((schemeUrl, idx) => {
+                if (triggered && idx > 0) return;
                 try {
                     const t0 = Date.now();
                     const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.src = appSchemes[i];
+                    iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
+                    iframe.src = schemeUrl;
                     document.body.appendChild(iframe);
+                    triggered = true;
 
-                    setTimeout(function() {
-                        if (!handled && Date.now() - t0 < 600) {
-                            handled = true;
-                            try { document.body.removeChild(iframe); } catch(e) {}
-                            window.open(fallbackUrl, '_blank');
-                        }
-                    }, 550);
-
-                    setTimeout(function() {
+                    // 超时后fallback：如果APP未安装，打开网页版+提供复制链接
+                    setTimeout(() => {
                         try { document.body.removeChild(iframe); } catch(e) {}
-                    }, 2000);
-                    break;
-                } catch(e) { continue; }
-            }
+                        if (Date.now() - t0 < 800) {
+                            // APP可能没装，弹窗让用户选择
+                            if (confirm('未能自动唤起咪咕APP\n\n是否复制比赛链接到剪贴板？\n\n链接: ' + fallbackUrl)) {
+                                if (navigator.clipboard) {
+                                    navigator.clipboard.writeText(fallbackUrl).then(() => alert('✅ 链接已复制！请在浏览器中打开或粘贴到咪咕APP中'));
+                                }
+                            } else {
+                                window.open(fallbackUrl, '_blank');
+                            }
+                        }
+                    }, 650);
+
+                    // 最终清理
+                    setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2500);
+                } catch(e) {}
+            });
+            
+            if (!triggered) window.open(fallbackUrl, '_blank');
         }
 
         // ===== 小组赛数据（含场地） =====
         const groupMatches = [
-            {date:"6月11日 凌晨1:00", group:"A组", home:"墨西哥", away:"南非", venue:"墨西哥城 Estadio Azteca"},
-            {date:"6月11日 上午10:00", group:"A组", home:"韩国", away:"波黑", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月12日 凌晨3:00", group:"B组", home:"加拿大", away:"波黑", venue:"多伦多 BMO Field"},
-            {date:"6月12日 上午9:00", group:"D组", home:"美国", away:"巴拉圭", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月12日 下午12:00", group:"D组", home:"澳大利亚", away:"土耳其", venue:"温哥华 BC Place"},
-            {date:"6月13日 凌晨3:00", group:"B组", home:"卡塔尔", away:"瑞士", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月13日 上午6:00", group:"C组", home:"巴西", away:"摩洛哥", venue:"纽约 MetLife Stadium"},
-            {date:"6月13日 上午9:00", group:"C组", home:"海地", away:"苏格兰", venue:"马萨诸塞 Gillette Stadium"},
-            {date:"6月14日 上午7:00", group:"E组", home:"科特迪瓦", away:"厄瓜多尔", venue:"费城 Lincoln Financial Field"},
-            {date:"6月14日 上午9:00", group:"E组", home:"德国", away:"库拉索", venue:"休斯敦 NRG Stadium"},
-            {date:"6月14日 上午10:00", group:"F组", home:"瑞典", away:"突尼斯", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月14日 下午12:00", group:"F组", home:"荷兰", away:"日本", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月15日 上午0:00", group:"H组", home:"西班牙", away:"佛得角", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月15日 凌晨3:00", group:"G组", home:"比利时", away:"埃及", venue:"西雅图 Lumen Field"},
-            {date:"6月15日 上午6:00", group:"H组", home:"沙特阿拉伯", away:"乌拉圭", venue:"迈阿密 Hard Rock Stadium"},
-            {date:"6月15日 上午9:00", group:"G组", home:"伊朗", away:"新西兰", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月16日 凌晨3:00", group:"I组", home:"法国", away:"塞内加尔", venue:"纽约 MetLife Stadium"},
-            {date:"6月16日 上午6:00", group:"I组", home:"伊拉克", away:"挪威", venue:"马萨诸塞 Gillette Stadium"},
-            {date:"6月16日 上午9:00", group:"J组", home:"阿根廷", away:"阿尔及利亚", venue:"堪萨斯城 Arrowhead Stadium"},
-            {date:"6月16日 下午12:00", group:"J组", home:"奥地利", away:"约旦", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月17日 凌晨4:00", group:"L组", home:"英格兰", away:"克罗地亚", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月17日 上午7:00", group:"L组", home:"加纳", away:"巴拿马", venue:"多伦多 BMO Field"},
-            {date:"6月17日 上午10:00", group:"K组", home:"乌兹别克斯坦", away:"哥伦比亚", venue:"墨西哥城 Estadio Azteca"},
-            {date:"6月17日 上午11:00", group:"K组", home:"葡萄牙", away:"刚果民主共和国", venue:"休斯敦 NRG Stadium"},
-            {date:"6月19日 上午0:00", group:"A组", home:"捷克", away:"南非", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月12日 凌晨3:00", group:"A组", home:"墨西哥", away:"南非", venue:"墨西哥城 Estadio Azteca"},
+            {date:"6月12日 上午10:00", group:"A组", home:"韩国", away:"波黑", venue:"瓜达拉哈拉 Estadio Akron"},
+            {date:"6月13日 凌晨3:00", group:"B组", home:"加拿大", away:"波黑", venue:"多伦多 BMO Field"},
+            {date:"6月13日 上午9:00", group:"D组", home:"美国", away:"巴拉圭", venue:"洛杉矶 SoFi Stadium"},
+            {date:"6月14日 凌晨3:00", group:"B组", home:"卡塔尔", away:"瑞士", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月14日 上午6:00", group:"C组", home:"巴西", away:"摩洛哥", venue:"纽约 MetLife Stadium"},
+            {date:"6月14日 上午9:00", group:"C组", home:"海地", away:"苏格兰", venue:"马萨诸塞 Gillette Stadium"},
+            {date:"6月14日 中午12:00", group:"D组", home:"澳大利亚", away:"土耳其", venue:"温哥华 BC Place"},
+            {date:"6月15日 凌晨1:00", group:"E组", home:"德国", away:"库拉索", venue:"休斯敦 NRG Stadium"},
+            {date:"6月15日 凌晨4:00", group:"F组", home:"荷兰", away:"日本", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月15日 上午7:00", group:"E组", home:"科特迪瓦", away:"厄瓜多尔", venue:"费城 Lincoln Financial Field"},
+            {date:"6月15日 上午10:00", group:"F组", home:"瑞典", away:"突尼斯", venue:"蒙特雷 Estadio BBVA"},
+            {date:"6月16日 凌晨0:00", group:"H组", home:"西班牙", away:"佛得角", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月16日 凌晨3:00", group:"G组", home:"比利时", away:"埃及", venue:"西雅图 Lumen Field"},
+            {date:"6月16日 上午6:00", group:"H组", home:"沙特阿拉伯", away:"乌拉圭", venue:"迈阿密 Hard Rock Stadium"},
+            {date:"6月16日 上午9:00", group:"G组", home:"伊朗", away:"新西兰", venue:"洛杉矶 SoFi Stadium"},
+            {date:"6月17日 凌晨3:00", group:"I组", home:"法国", away:"塞内加尔", venue:"纽约 MetLife Stadium"},
+            {date:"6月17日 上午6:00", group:"I组", home:"伊拉克", away:"挪威", venue:"马萨诸塞 Gillette Stadium"},
+            {date:"6月17日 上午9:00", group:"J组", home:"阿根廷", away:"阿尔及利亚", venue:"堪萨斯城 Arrowhead Stadium"},
+            {date:"6月17日 中午12:00", group:"J组", home:"奥地利", away:"约旦", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月18日 凌晨1:00", group:"K组", home:"葡萄牙", away:"刚果民主共和国", venue:"休斯敦 NRG Stadium"},
+            {date:"6月18日 凌晨4:00", group:"L组", home:"英格兰", away:"克罗地亚", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月18日 上午7:00", group:"L组", home:"加纳", away:"巴拿马", venue:"多伦多 BMO Field"},
+            {date:"6月18日 上午10:00", group:"K组", home:"乌兹别克斯坦", away:"哥伦比亚", venue:"墨西哥城 Estadio Azteca"},
+            {date:"6月19日 凌晨0:00", group:"A组", home:"南非", away:"波黑", venue:"亚特兰大 Mercedes-Benz Stadium"},
             {date:"6月19日 凌晨3:00", group:"B组", home:"瑞士", away:"波黑", venue:"洛杉矶 SoFi Stadium"},
             {date:"6月19日 上午6:00", group:"B组", home:"加拿大", away:"卡塔尔", venue:"温哥华 BC Place"},
             {date:"6月19日 上午9:00", group:"A组", home:"墨西哥", away:"韩国", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月20日 上午0:00", group:"D组", home:"土耳其", away:"巴拉圭", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月20日 上午3:00", group:"D组", home:"美国", away:"澳大利亚", venue:"西雅图 Lumen Field"},
+            {date:"6月20日 凌晨3:00", group:"D组", home:"美国", away:"澳大利亚", venue:"西雅图 Lumen Field"},
             {date:"6月20日 上午6:00", group:"C组", home:"苏格兰", away:"摩洛哥", venue:"马萨诸塞 Gillette Stadium"},
             {date:"6月20日 上午9:00", group:"C组", home:"巴西", away:"海地", venue:"费城 Lincoln Financial Field"},
-            {date:"6月21日 上午0:00", group:"F组", home:"突尼斯", away:"日本", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月21日 下午1:00", group:"F组", home:"荷兰", away:"瑞典", venue:"休斯敦 NRG Stadium"},
-            {date:"6月21日 下午4:00", group:"E组", home:"德国", away:"科特迪瓦", venue:"多伦多 BMO Field"},
+            {date:"6月20日 中午12:00", group:"D组", home:"土耳其", away:"巴拉圭", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月21日 凌晨1:00", group:"F组", home:"荷兰", away:"瑞典", venue:"休斯敦 NRG Stadium"},
+            {date:"6月21日 凌晨4:00", group:"E组", home:"德国", away:"科特迪瓦", venue:"多伦多 BMO Field"},
             {date:"6月21日 上午8:00", group:"E组", home:"厄瓜多尔", away:"库拉索", venue:"堪萨斯城 Arrowhead Stadium"},
-            {date:"6月22日 上午0:00", group:"H组", home:"西班牙", away:"沙特阿拉伯", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月21日 中午12:00", group:"F组", home:"突尼斯", away:"日本", venue:"蒙特雷 Estadio BBVA"},
+            {date:"6月22日 凌晨0:00", group:"H组", home:"西班牙", away:"沙特阿拉伯", venue:"亚特兰大 Mercedes-Benz Stadium"},
             {date:"6月22日 凌晨3:00", group:"G组", home:"比利时", away:"伊朗", venue:"洛杉矶 SoFi Stadium"},
             {date:"6月22日 上午6:00", group:"H组", home:"乌拉圭", away:"佛得角", venue:"迈阿密 Hard Rock Stadium"},
             {date:"6月22日 上午9:00", group:"G组", home:"新西兰", away:"埃及", venue:"温哥华 BC Place"},
-            {date:"6月23日 上午5:00", group:"I组", home:"法国", away:"伊拉克", venue:"费城 Lincoln Financial Field"},
+            {date:"6月23日 凌晨1:00", group:"J组", home:"阿根廷", away:"奥地利", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月23日 凌晨5:00", group:"I组", home:"法国", away:"伊拉克", venue:"费城 Lincoln Financial Field"},
             {date:"6月23日 上午8:00", group:"I组", home:"挪威", away:"塞内加尔", venue:"纽约 MetLife Stadium"},
-            {date:"6月23日 上午11:00", group:"J组", home:"约旦", away:"阿尔及利亚", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月23日 下午1:00", group:"J组", home:"阿根廷", away:"奥地利", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月24日 上午4:00", group:"L组", home:"英格兰", away:"加纳", venue:"马萨诸塞 Gillette Stadium"},
+            {date:"6月23日 中午11:00", group:"J组", home:"约旦", away:"阿尔及利亚", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月24日 凌晨1:00", group:"K组", home:"葡萄牙", away:"乌兹别克斯坦", venue:"休斯敦 NRG Stadium"},
+            {date:"6月24日 凌晨4:00", group:"L组", home:"英格兰", away:"加纳", venue:"马萨诸塞 Gillette Stadium"},
             {date:"6月24日 上午7:00", group:"L组", home:"巴拿马", away:"克罗地亚", venue:"多伦多 BMO Field"},
             {date:"6月24日 上午10:00", group:"K组", home:"哥伦比亚", away:"刚果民主共和国", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月24日 下午1:00", group:"K组", home:"葡萄牙", away:"乌兹别克斯坦", venue:"休斯敦 NRG Stadium"},
-            {date:"6月25日 凌晨3:00", group:"B组", home:"瑞士", away:"加拿大", venue:"温哥华 BC Place"},
-            {date:"6月25日 凌晨3:00", group:"B组", home:"波黑", away:"卡塔尔", venue:"西雅图 Lumen Field"},
+            {date:"6月25日 凌晨3:00", group:"B组", home:"加拿大", away:"瑞士", venue:"温哥华 BC Place"},
+            {date:"6月25日 凌晨3:00", group:"B组", home:"卡塔尔", away:"波黑", venue:"西雅图 Lumen Field"},
             {date:"6月25日 上午6:00", group:"C组", home:"苏格兰", away:"巴西", venue:"迈阿密 Hard Rock Stadium"},
             {date:"6月25日 上午6:00", group:"C组", home:"摩洛哥", away:"海地", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月25日 上午9:00", group:"A组", home:"捷克", away:"墨西哥", venue:"墨西哥城 Estadio Azteca"},
+            {date:"6月25日 上午9:00", group:"A组", home:"墨西哥", away:"波黑", venue:"墨西哥城 Estadio Azteca"},
             {date:"6月25日 上午9:00", group:"A组", home:"南非", away:"韩国", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月26日 上午4:00", group:"E组", home:"库拉索", away:"科特迪瓦", venue:"费城 Lincoln Financial Field"},
-            {date:"6月26日 上午4:00", group:"E组", home:"厄瓜多尔", away:"德国", venue:"纽约 MetLife Stadium"},
-            {date:"6月26日 上午7:00", group:"F组", home:"日本", away:"瑞典", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月26日 凌晨4:00", group:"E组", home:"厄瓜多尔", away:"德国", venue:"纽约 MetLife Stadium"},
+            {date:"6月26日 凌晨4:00", group:"E组", home:"库拉索", away:"科特迪瓦", venue:"费城 Lincoln Financial Field"},
             {date:"6月26日 上午7:00", group:"F组", home:"突尼斯", away:"荷兰", venue:"堪萨斯城 Arrowhead Stadium"},
-            {date:"6月26日 上午10:00", group:"D组", home:"土耳其", away:"美国", venue:"洛杉矶 SoFi Stadium"},
+            {date:"6月26日 上午7:00", group:"F组", home:"日本", away:"瑞典", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月26日 上午10:00", group:"D组", home:"美国", away:"土耳其", venue:"洛杉矶 SoFi Stadium"},
             {date:"6月26日 上午10:00", group:"D组", home:"巴拉圭", away:"澳大利亚", venue:"圣克拉拉 Levi's Stadium"},
             {date:"6月27日 凌晨3:00", group:"I组", home:"挪威", away:"法国", venue:"马萨诸塞 Gillette Stadium"},
             {date:"6月27日 凌晨3:00", group:"I组", home:"塞内加尔", away:"伊拉克", venue:"多伦多 BMO Field"},
-            {date:"6月27日 上午8:00", group:"H组", home:"佛得角", away:"沙特阿拉伯", venue:"休斯敦 NRG Stadium"},
             {date:"6月27日 上午8:00", group:"H组", home:"乌拉圭", away:"西班牙", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月27日 上午11:00", group:"G组", home:"埃及", away:"伊朗", venue:"西雅图 Lumen Field"},
-            {date:"6月27日 上午11:00", group:"G组", home:"新西兰", away:"比利时", venue:"温哥华 BC Place"},
+            {date:"6月27日 上午8:00", group:"H组", home:"佛得角", away:"沙特阿拉伯", venue:"休斯敦 NRG Stadium"},
+            {date:"6月27日 中午11:00", group:"G组", home:"新西兰", away:"比利时", venue:"温哥华 BC Place"},
+            {date:"6月27日 中午11:00", group:"G组", home:"埃及", away:"伊朗", venue:"西雅图 Lumen Field"},
             {date:"6月28日 上午5:00", group:"L组", home:"巴拿马", away:"英格兰", venue:"纽约 MetLife Stadium"},
             {date:"6月28日 上午5:00", group:"L组", home:"克罗地亚", away:"加纳", venue:"费城 Lincoln Financial Field"},
             {date:"6月28日 上午7:30", group:"K组", home:"哥伦比亚", away:"葡萄牙", venue:"迈阿密 Hard Rock Stadium"},
-            {date:"6月28日 上午7:30", group:"K组", home:"刚果民主共和国", away:"乌兹别克斯坦", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月28日 上午10:00", group:"J组", home:"阿尔及利亚", away:"奥地利", venue:"堪萨斯城 Arrowhead Stadium"},
-            {date:"6月28日 上午10:00", group:"J组", home:"约旦", away:"阿根廷", venue:"达拉斯 AT&T Stadium"}
-        ];
+            {date:"6月28日 上午7:30", group:"K组", home:"乌兹别克斯坦", away:"刚果民主共和国", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月28日 上午10:00", group:"J组", home:"约旦", away:"阿根廷", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月28日 上午10:00", group:"J组", home:"阿尔及利亚", away:"奥地利", venue:"堪萨斯城 Arrowhead Stadium"}
+        ];;
 
         // ===== 淘汰赛场地映射 =====
         const knockoutVenues = {
@@ -1111,68 +1124,68 @@
         // ===== 淘汰赛数据 =====
         const knockoutMatches = [
             {
-                round:"1/32决赛",
+                round:"32强淘汰赛",
                 matches:[
-                    {code:"M73", date:"6月29日 上午2:00", home:"A组第2名", away:"B组第2名", venue:"洛杉矶 SoFi Stadium"},
-                    {code:"M74", date:"6月30日 上午1:00", home:"E组第1名", away:"最佳第三名1", venue:"费城 Lincoln Financial Field"},
-                    {code:"M75", date:"6月30日 上午3:00", home:"F组第1名", away:"C组第2名", venue:"达拉斯 AT&T Stadium"},
-                    {code:"M76", date:"6月30日 上午6:00", home:"C组第1名", away:"F组第2名", venue:"纽约 MetLife Stadium"},
-                    {code:"M77", date:"7月1日 上午1:00", home:"I组第1名", away:"最佳第三名2", venue:"亚特兰大 Mercedes-Benz Stadium"},
-                    {code:"M78", date:"7月1日 上午3:00", home:"E组第2名", away:"I组第2名", venue:"西雅图 Lumen Field"},
-                    {code:"M79", date:"7月1日 上午6:00", home:"A组第1名", away:"最佳第三名3", venue:"墨西哥城 Estadio Azteca"},
-                    {code:"M80", date:"7月2日 上午0:00", home:"L组第1名", away:"最佳第三名4", venue:"休斯敦 NRG Stadium"},
-                    {code:"M81", date:"7月2日 上午3:00", home:"D组第1名", away:"最佳第三名5", venue:"迈阿密 Hard Rock Stadium"},
-                    {code:"M82", date:"7月2日 上午6:00", home:"G组第1名", away:"最佳第三名6", venue:"洛杉矶 SoFi Stadium"},
-                    {code:"M83", date:"7月3日 上午0:00", home:"K组第2名", away:"L组第2名", venue:"圣克拉拉 Levi's Stadium"},
-                    {code:"M84", date:"7月3日 上午3:00", home:"H组第1名", away:"J组第2名", venue:"多伦多 BMO Field"},
-                    {code:"M85", date:"7月3日 上午5:00", home:"B组第1名", away:"最佳第三名7", venue:"温哥华 BC Place"},
-                    {code:"M86", date:"7月4日 上午2:00", home:"J组第1名", away:"H组第2名", venue:"瓜达拉哈拉 Estadio Akron"},
-                    {code:"M87", date:"7月4日 上午3:00", home:"K组第1名", away:"最佳第三名8", venue:"马萨诸塞 Gillette Stadium"},
-                    {code:"M88", date:"7月4日 上午5:00", home:"D组第2名", away:"G组第2名", venue:"堪萨斯城 Arrowhead Stadium"}
+                    {code:"M73", date:"6月29日 凌晨3:00", home:"A组第2名", away:"B组第2名", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M74", date:"6月30日 凌晨4:30", home:"E组第1名", away:"最佳第三名1", venue:"费城 Lincoln Financial Field"},
+                    {code:"M75", date:"6月30日 上午9:00", home:"F组第1名", away:"C组第2名", venue:"蒙特雷 Estadio BBVA"},
+                    {code:"M76", date:"6月30日 凌晨1:00", home:"C组第1名", away:"F组第2名", venue:"休斯敦 NRG Stadium"},
+                    {code:"M77", date:"7月1日 上午5:00", home:"I组第1名", away:"最佳第三名2", venue:"纽约 MetLife Stadium"},
+                    {code:"M78", date:"7月1日 凌晨1:00", home:"E组第2名", away:"I组第2名", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M79", date:"7月1日 上午9:00", home:"A组第1名", away:"最佳第三名3", venue:"墨西哥城 Estadio Azteca"},
+                    {code:"M80", date:"7月2日 凌晨0:00", home:"L组第1名", away:"最佳第三名4", venue:"亚特兰大 Mercedes-Benz Stadium"},
+                    {code:"M81", date:"7月2日 上午8:00", home:"D组第1名", away:"最佳第三名5", venue:"圣克拉拉 Levi's Stadium"},
+                    {code:"M82", date:"7月2日 凌晨4:00", home:"G组第1名", away:"最佳第三名6", venue:"西雅图 Lumen Field"},
+                    {code:"M83", date:"7月3日 上午7:00", home:"K组第2名", away:"L组第2名", venue:"多伦多 BMO Field"},
+                    {code:"M84", date:"7月3日 凌晨3:00", home:"H组第1名", away:"J组第2名", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M85", date:"7月3日 中午11:00", home:"B组第1名", away:"最佳第三名7", venue:"温哥华 BC Place"},
+                    {code:"M86", date:"7月4日 上午6:00", home:"J组第1名", away:"H组第2名", venue:"迈阿密 Hard Rock Stadium"},
+                    {code:"M87", date:"7月4日 上午9:30", home:"K组第1名", away:"最佳第三名8", venue:"堪萨斯城 Arrowhead Stadium"},
+                    {code:"M88", date:"7月4日 凌晨2:00", home:"D组第2名", away:"G组第2名", venue:"达拉斯 AT&T Stadium"}
                 ]
             },
             {
-                round:"1/16决赛",
+                round:"16强淘汰赛",
                 matches:[
-                    {code:"M89", date:"7月5日 上午3:00", home:"M74胜者", away:"M77胜者", venue:"达拉斯 AT&T Stadium"},
-                    {code:"M90", date:"7月5日 上午6:00", home:"M73胜者", away:"M75胜者", venue:"纽约 MetLife Stadium"},
-                    {code:"M91", date:"7月6日 上午3:00", home:"M76胜者", away:"M78胜者", venue:"洛杉矶 SoFi Stadium"},
-                    {code:"M92", date:"7月6日 上午6:00", home:"M79胜者", away:"M80胜者", venue:"休斯敦 NRG Stadium"},
-                    {code:"M93", date:"7月7日 上午3:00", home:"M83胜者", away:"M84胜者", venue:"亚特兰大 Mercedes-Benz Stadium"},
-                    {code:"M94", date:"7月7日 上午6:00", home:"M81胜者", away:"M82胜者", venue:"西雅图 Lumen Field"},
-                    {code:"M95", date:"7月8日 上午3:00", home:"M86胜者", away:"M88胜者", venue:"迈阿密 Hard Rock Stadium"},
-                    {code:"M96", date:"7月8日 上午6:00", home:"M85胜者", away:"M87胜者", venue:"墨西哥城 Estadio Azteca"}
+                    {code:"M89", date:"7月5日 凌晨5:00", home:"M74胜者", away:"M77胜者", venue:"费城 Lincoln Financial Field"},
+                    {code:"M90", date:"7月5日 凌晨1:00", home:"M73胜者", away:"M75胜者", venue:"休斯敦 NRG Stadium"},
+                    {code:"M91", date:"7月6日 凌晨4:00", home:"M76胜者", away:"M78胜者", venue:"纽约 MetLife Stadium"},
+                    {code:"M92", date:"7月6日 上午8:00", home:"M79胜者", away:"M80胜者", venue:"墨西哥城 Estadio Azteca"},
+                    {code:"M93", date:"7月7日 凌晨3:00", home:"M83胜者", away:"M84胜者", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M94", date:"7月7日 上午8:00", home:"M81胜者", away:"M82胜者", venue:"西雅图 Lumen Field"},
+                    {code:"M95", date:"7月8日 凌晨0:00", home:"M86胜者", away:"M88胜者", venue:"亚特兰大 Mercedes-Benz Stadium"},
+                    {code:"M96", date:"7月8日 凌晨4:00", home:"M85胜者", away:"M87胜者", venue:"温哥华 BC Place"}
                 ]
             },
             {
                 round:"1/4决赛",
                 matches:[
-                    {code:"M97", date:"7月10日 上午9:00", home:"M89胜者", away:"M90胜者", venue:"达拉斯 AT&T Stadium"},
-                    {code:"M98", date:"7月11日 上午8:00", home:"M93胜者", away:"M94胜者", venue:"纽约 MetLife Stadium"},
-                    {code:"M99", date:"7月12日 上午7:00", home:"M91胜者", away:"M92胜者", venue:"洛杉矶 SoFi Stadium"},
-                    {code:"M100", date:"7月12日 上午10:00", home:"M95胜者", away:"M96胜者", venue:"休斯敦 NRG Stadium"}
+                    {code:"M97", date:"7月10日 凌晨4:00", home:"M89胜者", away:"M90胜者", venue:"马萨诸塞 Gillette Stadium"},
+                    {code:"M98", date:"7月11日 凌晨3:00", home:"M93胜者", away:"M94胜者", venue:"洛杉矶 SoFi Stadium"},
+                    {code:"M99", date:"7月12日 凌晨5:00", home:"M91胜者", away:"M92胜者", venue:"迈阿密 Hard Rock Stadium"},
+                    {code:"M100", date:"7月12日 上午9:00", home:"M95胜者", away:"M96胜者", venue:"堪萨斯城 Arrowhead Stadium"}
                 ]
             },
             {
                 round:"半决赛",
                 matches:[
-                    {code:"M101", date:"7月15日 上午9:00", home:"M97胜者", away:"M98胜者", venue:"达拉斯 AT&T Stadium"},
-                    {code:"M102", date:"7月16日 上午8:00", home:"M99胜者", away:"M100胜者", venue:"纽约 MetLife Stadium"}
+                    {code:"M101", date:"7月15日 凌晨3:00", home:"M97胜者", away:"M98胜者", venue:"达拉斯 AT&T Stadium"},
+                    {code:"M102", date:"7月16日 凌晨3:00", home:"M99胜者", away:"M100胜者", venue:"亚特兰大 Mercedes-Benz Stadium"}
                 ]
             },
             {
                 round:"三四名决赛",
                 matches:[
-                    {code:"M103", date:"7月19日 上午8:00", home:"M101负者", away:"M102负者", venue:"迈阿密 Hard Rock Stadium"}
+                    {code:"M103", date:"7月19日 上午5:00", home:"M101负者", away:"M102负者", venue:"迈阿密 Hard Rock Stadium"}
                 ]
             },
             {
                 round:"★冠军决赛★",
                 matches:[
-                    {code:"M104", date:"7月20日 上午8:00", home:"M101胜者", away:"M102胜者", venue:"纽约 MetLife Stadium", isFinal:true}
+                    {code:"M104", date:"7月20日 凌晨3:00", home:"M101胜者", away:"M102胜者", venue:"纽约 MetLife Stadium", isFinal:true}
                 ]
             }
-        ];
+        ];;
 
         // ===== 球队阵容数据（完整版：含教练、队长、伤停、俱乐部） =====
         const teamSquads = {
