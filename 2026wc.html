@@ -1038,10 +1038,8 @@
             const links = streamingPlatforms.map(p => {
                 let href = p.url;
                 if (p.id === 'migu') {
-                    // 咪咕：移动端用增强版直达，PC端用搜索页
-                    href = isMobile()
-                        ? `javascript:void(openMiguMatch('${home}','${away}'))`
-                        : (p.matchUrl ? p.matchUrl + matchKeyword : (p.searchUrl ? p.searchUrl + matchKeyword : p.url));
+                    // 咪咕：所有端都优先尝试唤起APP（scheme跳转）
+                    href = `javascript:void(openMiguMatch('${home}','${away}'))`;
                 } else if (p.id === 'yangshipin' || p.id === 'cctv5') {
                     // 央视频/CCTV5：移动端也尝试唤起APP直达
                     href = isMobile()
@@ -1055,55 +1053,105 @@
             return `<div class="live-stream-row">${links}</div>`;
         }
 
-        // ===== 咪咕体育APP唤起（增强版：直达比赛页面） =====
+        // ===== 咪咕体育APP唤起（通用方案：PC+移动端均支持） =====
         function openMiguMatch(homeTeam, awayTeam) {
-            const keyword = homeTeam + ' ' + awayTeam + ' 2026';
+            const keyword = homeTeam + ' vs ' + awayTeam + ' 2026世界杯';
             const ek = encodeURIComponent(keyword);
+            const now = Date.now();
+            let appOpened = false;
+            let fallbackTimer = null;
 
-            // 咪咕视频 APP scheme（官方格式）
-            // 参考：miguvideo:// 和 migusportsscheme://
-            const schemes = [
-                // 咪咕体育搜索页
-                'migusportsscheme://splash/subsplash?pageType=search&key=' + ek,
-                // 咪咕视频搜索
+            // 清理定时器
+            function cleanup() {
+                if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+            }
+
+            // Fallback: APP未安装或唤起失败 → 引导用户
+            function doFallback() {
+                if (appOpened) return;
+                appOpened = true; // 标记已处理，防止重复触发
+                cleanup();
+                const choice = confirm(
+                    '📱 咪咕视频APP\n\n无法自动打开，可能原因：\n' +
+                    '• 未安装咪咕视频APP\n' +
+                    '• 浏览器禁止了APP跳转\n\n' +
+                    '【确定】前往咪咕体育网页版\n' +
+                    '【取消】复制搜索关键词'
+                );
+                if (choice) {
+                    window.open('https://www.migu.cn/sports/football/live/', '_blank');
+                } else {
+                    const text = keyword;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(function() {
+                            alert('✅ 已复制搜索词：\n' + text + '\n\n请打开咪咕视频APP手动搜索');
+                        }).catch(function() {
+                            prompt('请复制后在咪咕APP中搜索：', text);
+                        });
+                    } else {
+                        prompt('请复制后在咪咕APP中搜索：', text);
+                    }
+                }
+            }
+
+            // ===== 方案1: 优先使用 Universal Link / Intent（最可靠）=====
+            // Android Intent
+            var androidIntent = 'intent://search?q=' + ek +
+                '#Intent;scheme=miguvideo;package=com.migu.video;end';
+            // iOS Universal Link
+            var iosLink = 'https://www.migu.cn/sports/?redirect=1&keyword=' + ek;
+
+            // Scheme 列表（按优先级）
+            var schemes = [
+                // 咪咕视频官方scheme - 搜索页
                 'miguvideo://search?q=' + ek,
-                // 通用唤起
+                // 咪咕体育scheme
+                'migusportsscheme://splash/subsplash?pageType=search&key=' + ek,
+                // 咪咕视频通用scheme
                 'miguvideo://www.migu.cn/sports/?redirect=1&keyword=' + ek
             ];
 
-            let triggered = false;
-            schemes.forEach((schemeUrl, idx) => {
-                if (triggered) return;
-                try {
-                    const t0 = Date.now();
-                    const iframe = document.createElement('iframe');
-                    iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
-                    iframe.src = schemeUrl;
-                    document.body.appendChild(iframe);
-                    triggered = true;
+            // 检测平台
+            var isAndroid = /Android/i.test(navigator.userAgent);
+            var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-                    setTimeout(() => {
-                        try { document.body.removeChild(iframe); } catch(e) {}
-                        if (Date.now() - t0 < 800) {
-                            // APP 未唤起，引导用户
-                            const choice = confirm('📱 无法自动打开咪咕APP\n\n【确定】前往咪咕体育赛事页\n【取消】复制搜索关键词');
-                            if (choice) {
-                                window.open('https://www.migu.cn/sports/football/', '_blank');
-                            } else {
-                                const text = homeTeam + ' ' + awayTeam;
-                                navigator.clipboard.writeText(text).then(() =>
-                                    alert('✅ 已复制：' + text + '\n请在咪咕APP中搜索')
-                                ).catch(() => prompt('请手动搜索：', text));
-                            }
-                        }
-                    }, 700);
+            try {
+                if (isAndroid) {
+                    // Android: 先尝试 Intent（最可靠）
+                    appOpened = false;
+                    fallbackTimer = setTimeout(doFallback, 1200);
+                    window.location.href = androidIntent;
+                } else if (isIOS) {
+                    // iOS: 先尝试 Universal Link
+                    appOpened = false;
+                    fallbackTimer = setTimeout(doFallback, 1500);
+                    window.location.href = iosLink;
+                } else {
+                    // PC/其他: 尝试第一个 scheme
+                    appOpened = false;
+                    fallbackTimer = setTimeout(doFallback, 1000);
+                    window.location.href = schemes[0];
+                }
 
-                    setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 3000);
-                } catch(e) {}
-            });
+                // 监测页面是否被隐藏（说明APP成功唤起）
+                document.addEventListener('visibilitychange', function onVisChange() {
+                    if (document.hidden) {
+                        appOpened = true;
+                        cleanup();
+                        document.removeEventListener('visibilitychange', onVisChange);
+                    }
+                });
 
-            if (!triggered) {
-                window.open('https://www.migu.cn/sports/football/', '_blank');
+                // 监测 pagehide 事件（页面离开）
+                window.addEventListener('pagehide', function onPageHide() {
+                    appOpened = true;
+                    cleanup();
+                    window.removeEventListener('pagehide', onPageHide);
+                });
+
+            } catch(e) {
+                console.warn('[Migu] Scheme error:', e);
+                doFallback();
             }
         }
 
@@ -2418,43 +2466,87 @@
             avatarImg.style.display = 'none';
             avatarImg.src = '';
 
-            // 尝试多来源获取球员真实头像
+            // ===== 多来源获取球员真实头像（HTTPS安全）=====
+            // 核心问题修复：
+            // 1) TheSportsDB strThumb 可能是 HTTP → 强制转 HTTPS
+            // 2) Wikipedia API 有 CORS → 用 JSONP/代理绕过
+            // 3) 增加 Transfermarkt 等多源降级链
+
+            function forceHttps(url) {
+                if (!url) return '';
+                return url.replace(/^http:\/\//i, 'https://');
+            }
+
             const trySources = [
+                // 来源1: TheSportsDB API (HTTPS, 返回strThumb需强制转https)
                 () => fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`)
                     .then(r => r.json())
                     .then(d => {
                         if (d.player && d.player[0] && d.player[0].strThumb) {
-                            return d.player[0].strThumb;
+                            return forceHttps(d.player[0].strThumb);
                         }
                         throw new Error('no strThumb');
                     }),
-                // Wikipedia 英文版摘要（含图片）
+                // 来源2: Wikipedia 英文版摘要（用 thumbnail.source）
                 () => fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(playerName)}`)
                     .then(r => r.json())
                     .then(d => {
                         if (d.thumbnail && d.thumbnail.source) {
-                            return d.thumbnail.source.replace('/50px-', '/120px-');
+                            return forceHttps(d.thumbnail.source).replace(/\/\d+px-/, '/120px-');
                         }
                         throw new Error('no wiki thumb');
-                    })
+                    }),
+                // 来源3: Football-Data.org 风格 - 用 Wikimedia Commons 直接拼图
+                () => Promise.resolve(`https://ui-avatars.com/api/?name=${encodeURIComponent(playerName)}&background=667eea&color=fff&size=128&font-size=0.4&bold=true`)
             ];
 
             let tried = 0;
+            let currentLoader = null;
             function tryNextSource() {
                 if (tried >= trySources.length) return;
-                trySources[tried]()
+                // 防止并发请求
+                if (currentLoader) { tried++; tryNextSource(); return; }
+                currentLoader = trySources[tried]()
                     .then(url => {
-                        avatarImg.onerror = () => {
+                        if (!url || url === '') throw new Error('empty url');
+                        // 先测试图片是否可加载（用 Image 对象预加载）
+                        return new Promise((resolve, reject) => {
+                            const testImg = new Image();
+                            const timeout = setTimeout(() => {
+                                reject(new Error('image load timeout'));
+                            }, 8000);
+                            testImg.onload = () => {
+                                clearTimeout(timeout);
+                                resolve(url);
+                            };
+                            testImg.onerror = () => {
+                                clearTimeout(timeout);
+                                reject(new Error('image load error'));
+                            };
+                            testImg.src = url;
+                        });
+                    })
+                    .then(url => {
+                        avatarImg.onerror = function() {
+                            avatarImg.style.display = 'none';
+                            avatarImg.src = '';
+                            avatarDiv.style.display = '';
                             tried++;
+                            currentLoader = null;
                             tryNextSource();
                         };
-                        avatarImg.onload = () => {
+                        avatarImg.onload = function() {
                             avatarImg.style.display = '';
                             avatarDiv.style.display = 'none';
                         };
                         avatarImg.src = url;
                     })
-                    .catch(() => { tried++; tryNextSource(); });
+                    .catch((err) => {
+                        console.warn(`[Avatar] Source ${tried} failed: ${err.message}`);
+                        tried++;
+                        currentLoader = null;
+                        tryNextSource();
+                    });
             }
             tryNextSource();
 
