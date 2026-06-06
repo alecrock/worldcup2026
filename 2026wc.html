@@ -2509,12 +2509,10 @@
             ];
 
             let tried = 0;
-            let currentLoader = null;
             function tryNextSource() {
                 if (tried >= trySources.length) return;
-                // 防止并发请求
-                if (currentLoader) { tried++; tryNextSource(); return; }
-                currentLoader = trySources[tried]()
+                // 直接尝试当前来源，不检查 currentLoader
+                trySources[tried]()
                     .then(url => {
                         if (!url || url === '') throw new Error('empty url');
                         // 先测试图片是否可加载（用 Image 对象预加载）
@@ -2540,7 +2538,6 @@
                             avatarImg.src = '';
                             avatarDiv.style.display = '';
                             tried++;
-                            currentLoader = null;
                             tryNextSource();
                         };
                         avatarImg.onload = function() {
@@ -2550,9 +2547,8 @@
                         avatarImg.src = url;
                     })
                     .catch((err) => {
-                        console.warn(`[Avatar] Source ${tried} failed: ${err.message}`);
+                        console.warn('[Avatar] Source ' + tried + ' failed: ' + err.message);
                         tried++;
-                        currentLoader = null;
                         tryNextSource();
                     });
             }
@@ -2832,6 +2828,12 @@
         // 降级函数：生成场次但比分显示"vs"（不造假）
         // 同时包含俱乐部比赛 + 国家队比赛
         function getFallbackMatches(playerName, club) {
+            // 不再生成虚假比赛数据 - 返回空数组
+            return [];
+        }
+
+        // 旧函数已弃用（生成虚假数据）
+        function getFallbackMatches_OLD(playerName, club) {
             const clubName = club || '未知俱乐部';
             // 根据俱乐部名推断主要对手（覆盖主流联赛）
             const clubOpps = {
@@ -3012,7 +3014,7 @@
                 <button class="player-modal-close" onclick="closePlayerModal()">✕</button>
                 <div class="player-modal-header">
                     <div class="player-modal-avatar" id="playerModalAvatar"></div>
-                    <img class="player-modal-avatar-img" id="playerModalAvatarImg" src="" alt="" style="display:none;border-radius:50%;width:48px;height:48px;object-fit:cover;" onerror="this.style.display='none';this.previousElementSibling.style.display='';">
+                    <img class="player-modal-avatar-img" id="playerModalAvatarImg" src="" alt="" style="display:none;border-radius:50%;width:48px;height:48px;object-fit:cover;">
                     <div>
                         <div class="player-modal-name" id="playerModalName"></div>
                         <div class="player-modal-club" id="playerModalClub"></div>
