@@ -2562,11 +2562,18 @@
                     const typeTag = m.type === 'national'
                         ? '<span class="match-type-tag nt-tag">国家队</span>'
                         : '<span class="match-type-tag club-tag">俱乐部</span>';
-                    const timeStr = (m.minutes !== undefined && m.minutes > 0) ? '<span class="match-minutes">' + m.minutes + '分钟</span>' : '';
+                    const statsParts = [];
+                    if (m.goals > 0) statsParts.push('⚽' + m.goals);
+                    if (m.assists > 0) statsParts.push('🅰️' + m.assists);
+                    if (m.rating) statsParts.push('⭐' + m.rating);
+                    if (m.minutes) statsParts.push(m.minutes + '分钟');
+                    const statsStr = statsParts.length > 0
+                        ? '<span class="player-modal-match-stats">' + statsParts.join(' ') + '</span>'
+                        : '';
                     return '<div class="player-modal-match">'
-                        + '<span class="player-modal-match-date">' + m.date + '</span>'
+                        + '<span class="player-modal-match-date">' + (m.date || '') + '</span>'
                         + '<span class="player-modal-match-fixtures">' + typeTag + ' ' + m.home + ' <span class="player-modal-match-score">' + m.score + '</span> ' + m.away + '</span>'
-                        + '<span class="player-modal-match-stats">⚽' + m.goals + ' 🅰️' + m.assists + ' ⭐' + m.rating + ' ' + timeStr + '</span>'
+                        + statsStr
                         + '</div>';
                 }).join('');
             }).catch(() => {
@@ -2577,44 +2584,79 @@
 
         
         async function fetchPlayerRecentMatches(playerName, club) {
-            // 尝试 TheSportsDB 获取真实数据
+            // 正确做法：
+            // 1) 用球员名查到球员 → 拿到 idTeam（俱乐部ID）
+            // 2) 用 idTeam 调 eventslast.php（这个接口要的是「球队ID」）
+            // 3) intHomeScore / intAwayScore 就是最终完场比分
             try {
                 const pr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
                 const pdata = await pr.json();
-                if (pdata.player && pdata.player.length > 0) {
-                    const pid = pdata.player[0].idPlayer;
-                    const er = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
-                    const edata = await er.json();
-                    if (edata.results && edata.results.length > 0) {
-                        // 国家队联赛关键词（出现在 strLeague 中）
-                        const ntKeywords = ['World Cup','Cup','Friendly','Nations League','Copa America','Euro','AFCON','Gold Cup','Confederations'];
-                        return edata.results.slice(0, 10).map(ev => {
-                            const league = (ev.strLeague || '').toLowerCase();
-                            const isNT = ntKeywords.some(kw => league.includes(kw.toLowerCase())) ||
-                                          (ev.strLeague && ev.strLeague.includes('International'));
-                            // 解析进球
-                            let gForHome = 0, gForAway = 0;
-                            if (ev.strHomeGoalDetails) gForHome = ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length;
-                            if (ev.strAwayGoalDetails) gForAway = ev.strAwayGoalDetails.split(';').filter(g => g && g.includes(playerName)).length;
-                            // 出场时间模拟（TheSportsDB 无此字段）
-                            const appeared = Math.random() > 0.08;
-                            const mins = appeared ? (Math.random() > 0.7 ? 90 : Math.floor(60 + Math.random()*31)) : 0;
-                            return {
-                                date: ev.dateEvent || '',
-                                home: ev.strHomeTeam || '',
-                                away: ev.strAwayTeam || '',
-                                score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
-                                goals: gForHome + gForAway,
-                                assists: Math.floor(Math.random()*2),
-                                rating: (6.3 + Math.random()*3.2).toFixed(1),
-                                type: isNT ? 'national' : 'club',
-                                minutes: mins
-                            };
-                        });
-                    }
+                if (!pdata.player || pdata.player.length === 0) {
+                    console.warn('[Matches] 未找到球员:', playerName);
+                    return [];
                 }
-            } catch(e) { console.warn('API获取失败，使用模拟数据', e); }
-            return getMockPlayerMatches(playerName, club);
+                const player = pdata.player[0];
+                const teamId = player.idTeam;   // ← 关键：用球队ID，不是球员ID
+                if (!teamId) {
+                    console.warn('[Matches] 球员无球队ID:', playerName);
+                    return [];
+                }
+
+                // 获取俱乐部近期比赛（最终比分在 intHomeScore / intAwayScore）
+                const er = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${teamId}`);
+                const edata = await er.json();
+                let matches = [];
+                if (edata.results && edata.results.length > 0) {
+                    matches = edata.results.slice(0, 10).map(ev => {
+                        const isHome = (ev.strHomeTeam || '') === (player.strTeam || club);
+                        return {
+                            date: ev.dateEvent || '',
+                            home: ev.strHomeTeam || '',
+                            away: ev.strAwayTeam || '',
+                            score: (ev.intHomeScore !== null && ev.intHomeScore !== '')
+                                ? ev.intHomeScore + '-' + ev.intAwayScore : 'vs',
+                            goals: 0,   // TheSportsDB 无球员个人进球数据
+                            assists: 0,
+                            rating: '',
+                            type: 'club',
+                            minutes: ''
+                        };
+                    });
+                }
+
+                // 尝试获取国家队比赛（用球员国籍查国家队）
+                const nationality = player.strNationality || '';
+                if (nationality) {
+                    try {
+                        const nr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/search_all_teams.php?n=${encodeURIComponent(nationality)}&s=${encodeURIComponent(nationality)}`);
+                        const ndata = await nr.json();
+                        if (ndata.teams && ndata.teams.length > 0) {
+                            const ntId = ndata.teams[0].idTeam;
+                            const ner = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${ntId}`);
+                            const nedata = await ner.json();
+                            if (nedata.results && nedata.results.length > 0) {
+                                const ntMatches = nedata.results.slice(0, 5).map(ev => ({
+                                    date: ev.dateEvent || '',
+                                    home: ev.strHomeTeam || '',
+                                    away: ev.strAwayTeam || '',
+                                    score: (ev.intHomeScore !== null && ev.intHomeScore !== '')
+                                        ? ev.intHomeScore + '-' + ev.intAwayScore : 'vs',
+                                    goals: 0,
+                                    assists: 0,
+                                    rating: '',
+                                    type: 'national',
+                                    minutes: ''
+                                }));
+                                matches = matches.concat(ntMatches).slice(0, 10);
+                            }
+                        }
+                    } catch(e) { console.warn('[Matches] 国家队数据获取失败', e); }
+                }
+                return matches;
+            } catch(e) {
+                console.warn('[Matches] API获取失败:', e);
+                return [];
+            }
         }
 
 
