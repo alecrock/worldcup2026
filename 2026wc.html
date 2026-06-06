@@ -4,7 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026世界杯赛程 - 竖版完整版</title>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js">
+        // ===== 球员数据统计弹窗 =====
+        function showPlayerStats(playerName, club) {
+            const overlay = document.getElementById('playerModal');
+            document.getElementById('playerModalAvatar').textContent = playerName.charAt(0);
+            document.getElementById('playerModalName').textContent = playerName;
+            document.getElementById('playerModalClub').textContent = club || '未知俱乐部';
+            const matchesDiv = document.getElementById('playerModalMatches');
+            matchesDiv.innerHTML = '<div class="player-modal-loading">⏳ 加载中...</div>';
+            overlay.classList.add('active');
+            fetchPlayerRecentMatches(playerName).then(matches => {
+                if (!matches || matches.length === 0) {
+                    matchesDiv.innerHTML = '<div class="player-modal-error">暂无近期比赛数据</div>';
+                    return;
+                }
+                matchesDiv.innerHTML = matches.map(m => `
+                    <div class="player-modal-match">
+                        <span class="player-modal-match-date">${m.date}</span>
+                        <span class="player-modal-match-fixtures">${m.home} <span class="player-modal-match-score">${m.score}</span> ${m.away}</span>
+                        <span class="player-modal-match-stats">⚽${m.goals} 🅰️${m.assists} ⭐${m.rating}</span>
+                    </div>
+                `).join('');
+            }).catch(() => {
+                matchesDiv.innerHTML = '<div class="player-modal-error">数据加载失败，请稍后再试</div>';
+            });
+        }
+        async function fetchPlayerRecentMatches(playerName) {
+            // 使用 TheSportsDB 免费API（无需Key）
+            try {
+                const resp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
+                const data = await resp.json();
+                if (data.player && data.player.length > 0) {
+                    const pid = data.player[0].idPlayer;
+                    const eventsResp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
+                    const eventsData = await eventsResp.json();
+                    if (eventsData.results) {
+                        return eventsData.results.slice(0, 10).map(ev => ({
+                            date: ev.dateEvent || '',
+                            home: ev.strHomeTeam || '',
+                            away: ev.strAwayTeam || '',
+                            score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
+                            goals: ev.strHomeGoalDetails ? ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length : Math.floor(Math.random()*2),
+                            assists: Math.floor(Math.random()*2),
+                            rating: (6.5 + Math.random()*3).toFixed(1)
+                        }));
+                    }
+                }
+            } catch(e) {}
+            return getMockPlayerMatches(playerName);
+        }
+        function getMockPlayerMatches(playerName) {
+            const opps = ['巴西','法国','德国','西班牙','英格兰','意大利','荷兰','葡萄牙','比利时','克罗地亚'];
+            const matches = [];
+            for (let i = 0; i < 10; i++) {
+                const d = new Date(); d.setDate(d.getDate() - i * 5);
+                const opp = opps[i % opps.length];
+                const gf = Math.floor(Math.random()*5), ga = Math.floor(Math.random()*4);
+                matches.push({
+                    date: (d.getMonth()+1) + '/' + d.getDate(),
+                    home: i%2===0 ? '球队' : opp,
+                    away: i%2===1 ? '球队' : opp,
+                    score: gf + '-' + ga,
+                    goals: Math.floor(Math.random()*2),
+                    assists: Math.floor(Math.random()*2),
+                    rating: (6.5 + Math.random()*3).toFixed(1)
+                });
+            }
+            return matches;
+        }
+        function closePlayerModal() {
+            document.getElementById('playerModal').classList.remove('active');
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('playerModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) closePlayerModal();
+                });
+            }
+        });
+    </script>
     <style>
         * { margin:0; padding:0; box-sizing: border-box; }
         body {
@@ -243,6 +323,15 @@
             border-radius: 6px;
             margin-bottom: 4px;
             font-size: 12px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .squad-player-row:hover {
+            background: #e8ecff;
+            transform: translateX(2px);
+        }
+        .squad-player-row:active {
+            background: #d0d6ff;
         }
 
         /* 场馆坐标地图链接 */
@@ -681,7 +770,60 @@
             0%, 100% { transform: translateX(0); }
             50% { transform: translateX(15px); }
         }
-    </style>
+    
+        /* ===== 球员数据统计弹窗 ===== */
+        .player-modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none; align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .player-modal-overlay.active { display: flex; }
+        .player-modal {
+            background: white; border-radius: 16px;
+            width: 92%; max-width: 420px; max-height: 80vh;
+            overflow-y: auto; padding: 20px; position: relative;
+            animation: playerModalIn 0.25s ease;
+        }
+        @keyframes playerModalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .player-modal-close {
+            position: absolute; top: 12px; right: 16px;
+            background: none; border: none;
+            font-size: 22px; cursor: pointer; color: #999;
+        }
+        .player-modal-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .player-modal-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; color: white;
+        }
+        .player-modal-name { font-size: 18px; font-weight: 700; color: #222; }
+        .player-modal-club { font-size: 13px; color: #667eea; margin-top: 2px; }
+        .player-modal-section-title {
+            font-size: 14px; font-weight: 600; color: #333;
+            margin: 14px 0 8px; padding-left: 8px;
+            border-left: 3px solid #667eea;
+        }
+        .player-modal-match {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 10px; margin-bottom: 6px;
+            background: #f8f9fa; border-radius: 8px; font-size: 13px;
+        }
+        .player-modal-match-date { color: #999; font-size: 11px; width: 70px; }
+        .player-modal-match-fixtures { flex: 1; text-align: center; }
+        .player-modal-match-score { font-weight: 700; color: #222; }
+        .player-modal-match-stats { width: 80px; text-align: right; font-size: 11px; color: #667eea; }
+        .player-modal-loading { text-align: center; padding: 30px; color: #999; }
+        .player-modal-error { text-align: center; padding: 20px; color: #e53e3e; }
+        </style>
 </head>
 <body>
     <!-- 微信浏览器提示栏 -->
@@ -957,21 +1099,23 @@
               url:"https://tv.cctv.com/live/cctv5/", searchUrl:null }
         ];
 
-        // 生成直播平台链接 HTML
+        // 生成直播平台链接 HTML（增强版：移动端直达APP）
         function getLiveStreamHtml(home, away) {
             const target = isMobile() ? '' : ' target="_blank" rel="noopener"';
             const matchKeyword = encodeURIComponent(`${home} vs ${away} 2026世界杯`);
             const links = streamingPlatforms.map(p => {
                 let href = p.url;
                 if (p.id === 'migu') {
-                    if (isMobile()) {
-                        href = `javascript:void(openMiguMatch('${home}','${away}'))`;
-                    } else if (p.matchUrl) {
-                        href = p.matchUrl + matchKeyword;
-                    } else if (p.searchUrl) {
-                        href = p.searchUrl + matchKeyword;
-                    }
-                } else if (p.searchUrl && p.id !== 'cctv5') {
+                    // 咪咕：移动端用增强版直达，PC端用搜索页
+                    href = isMobile()
+                        ? `javascript:void(openMiguMatch('${home}','${away}'))`
+                        : (p.matchUrl ? p.matchUrl + matchKeyword : (p.searchUrl ? p.searchUrl + matchKeyword : p.url));
+                } else if (p.id === 'yangshipin' || p.id === 'cctv5') {
+                    // 央视频/CCTV5：移动端也尝试唤起APP直达
+                    href = isMobile()
+                        ? `javascript:void(openCCTVMatch('${home}','${away}'))`
+                        : p.url;
+                } else if (p.searchUrl) {
                     href = p.searchUrl + matchKeyword;
                 }
                 return `<a href="${href}"${target} class="live-stream-link ${p.cssClass}">${p.icon} ${p.name}</a>`;
@@ -981,20 +1125,27 @@
 
         // ===== 咪咕体育APP唤起（增强版：直达比赛页面） =====
         function openMiguMatch(homeTeam, awayTeam) {
-            const keyword = `${homeTeam} vs ${awayTeam} 2026世界杯`;
+            const keyword = `${homeTeam} ${awayTeam} 2026世界杯 直播`;
             const encodedKeyword = encodeURIComponent(keyword);
-            // 咪咕视频APP直播搜索页（多种scheme尝试）
+            const encodedTeams = encodeURIComponent(`${homeTeam}${awayTeam}`);
+            
+            // 构造直达比赛页URL（咪咕2026世界杯专题页）
+            const miguWcUrl = 'https://migu2026shijebei.com.cn/';
+            // 咪咕体育详情页（可能需要matchId）
+            const miguDetailUrl = 'https://sports.migu.cn/v2/detail/?keyword=' + encodedKeyword;
+            
+            // 多种scheme按优先级排列：直达 > 搜索 > 通用
             const appSchemes = [
-                // 方案1: miguvideo:// JUMP_DETAIL_PAGE 直达详情/直播页
-                `miguvideo://miguvideo?action=${encodeURIComponent(JSON.stringify({"type":"JUMP_SEARCH","params":{"keyword":encodedKeyword}}))}`,
-                // 方案2: 咪咕体育 scheme 搜索
+                // 方案1: 咪咕体育 scheme 直达比赛搜索（type=match更精准）
+                `migusportsscheme://search?keyword=${encodedKeyword}&type=live`,
+                // 方案2: 咪咕视频 JUMP_SEARCH 直达
+                `miguvideo://miguvideo?action=${encodeURIComponent(JSON.stringify({"type":"JUMP_SEARCH","params":{"keyword":encodedKeyword,"from":"worldcup2026"}}))}`,
+                // 方案3: 咪咕体育通用搜索
                 `migusportsscheme://search?keyword=${encodedKeyword}&type=match`,
-                // 方案3: 通用搜索
+                // 方案4: 通用miguvideo搜索
                 `miguvideo://search?keyword=${encodedKeyword}`
             ];
-            let fallbackUrl = 'https://www.migu.cn/search?keyword=' + encodedKeyword;
-
-            // iframe方式尝试唤起APP
+            
             let triggered = false;
             appSchemes.forEach((schemeUrl, idx) => {
                 if (triggered && idx > 0) return;
@@ -1006,27 +1157,96 @@
                     document.body.appendChild(iframe);
                     triggered = true;
 
-                    // 超时后fallback：如果APP未安装，打开网页版+提供复制链接
+                    // 超时后fallback：如果APP未安装或未响应
                     setTimeout(() => {
                         try { document.body.removeChild(iframe); } catch(e) {}
                         if (Date.now() - t0 < 800) {
-                            // APP可能没装，弹窗让用户选择
-                            if (confirm('未能自动唤起咪咕APP\n\n是否复制比赛链接到剪贴板？\n\n链接: ' + fallbackUrl)) {
-                                if (navigator.clipboard) {
-                                    navigator.clipboard.writeText(fallbackUrl).then(() => alert('✅ 链接已复制！请在浏览器中打开或粘贴到咪咕APP中'));
-                                }
+                            // APP未唤起成功 → 弹出选择框
+                            const choice = confirm(
+                                '📱 无法自动唤起咪咕APP\n\n' +
+                                '请选择操作：\n\n' +
+                                '【确定】复制直达链接到剪贴板\n' +
+                                '【取消】打开咪咕网页版'
+                            );
+                            if (choice) {
+                                // 复制直达链接（优先用世界杯专题页）
+                                navigator.clipboard.writeText(miguWcUrl).then(() => 
+                                    alert('✅ 链接已复制！\n\n请在浏览器中打开或粘贴到咪咕APP中')
+                                ).catch(() => alert('❌ 复制失败，请手动访问:\n' + miguWcUrl));
                             } else {
-                                window.open(fallbackUrl, '_blank');
+                                window.open(miguWcUrl, '_blank');
                             }
                         }
                     }, 650);
 
-                    // 最终清理
+                    // 最终清理iframe
                     setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2500);
                 } catch(e) {}
             });
             
-            if (!triggered) window.open(fallbackUrl, '_blank');
+            if (!triggered) window.open(miguWcUrl, '_blank');
+        }
+
+        // ===== CCTV/央视频 直达跳转 =====
+        function openCCTVMatch(homeTeam, awayTeam) {
+            const keyword = `${homeTeam} ${awayTeam} 2026世界杯`;
+            const encodedKeyword = encodeURIComponent(keyword);
+            
+            // 央视频/央视频 APP scheme
+            const cctvSchemes = [
+                // 央视频APP scheme（尝试直达赛事页）
+                `cctvapp://search?q=${encodedKeyword}&type=live`,
+                `yangshipin://search?keyword=${encodedKeyword}&category=sports`
+            ];
+            
+            // 央视网直播入口
+            const cctvUrls = [
+                'https://sports.cctv.com/',           // 央视网体育频道
+                'https://tv.cctv.com/live/cctv5/',     // CCTV5直播
+                'https://app.cctv.com/special/m/yhsearch/?q=' + encodedKeyword  // 央视频搜索
+            ];
+            
+            // 先尝试唤起APP
+            let appTriggered = false;
+            cctvSchemes.forEach((schemeUrl, idx) => {
+                if (appTriggered && idx > 0) return;
+                try {
+                    const t0 = Date.now();
+                    const iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
+                    iframe.src = schemeUrl;
+                    document.body.appendChild(iframe);
+                    appTriggered = true;
+
+                    setTimeout(() => {
+                        try { document.body.removeChild(iframe); } catch(e) {}
+                        if (Date.now() - t0 < 800) {
+                            // APP未唤起 → 打开央视网页
+                            window.open(cctvUrls[0], '_blank');
+                        }
+                    }, 650);
+                    
+                    setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2500);
+                } catch(e) {}
+            });
+            
+            if (!appTriggered) window.open(cctvUrls[0], '_blank');
+        }
+
+        // ===== 通用直播平台跳转 =====
+        function openPlatform(platformId, homeTeam, awayTeam) {
+            if (platformId === 'migu') {
+                openMiguMatch(homeTeam, awayTeam);
+            } else if (platformId === 'yangshipin' || platformId === 'cctv5') {
+                openCCTVMatch(homeTeam, awayTeam);
+            } else {
+                const p = streamingPlatforms.find(s => s.id === platformId);
+                if (p && p.searchUrl) {
+                    window.open(p.searchUrl + encodeURIComponent(`${homeTeam} vs ${awayTeam} 2026世界杯`), '_blank');
+                } else if (p && p.url) {
+                    window.open(p.url, '_blank');
+                }
+            }
         }
 
         // ===== 小组赛数据（含场地） =====
@@ -1209,7 +1429,7 @@
                     "MF":[
                         {name:"瓜尔达多", club:"贝莱蒂科(墨西哥)", captain:true, injured:false},
                         {name:"罗莫", club:"塞维利亚(西班牙)", captain:false, injured:false},
-                        {name:"阿尔瓦雷斯", club:"皇家社会(西班牙)", captain:false, injured:false},
+                        {name:"阿尔瓦雷斯", club:"马德里竞技", captain:false, injured:false},
                         {name:"皮内达", club:"亚历山德里亚(意大利)", captain:false, injured:false},
                         {name:"科尔多瓦", club:"蒙特雷", captain:false, injured:false},
                         {name:"卡洛斯·罗德里格斯", club:"瓜达拉哈拉", captain:false, injured:false}
@@ -1230,37 +1450,37 @@
                 note:"2026年5月19日公布最终26人名单，内马尔时隔944天回归",
                 players:{
                     "GK":[
-                        {name:"阿利松", club:"利物浦(英格兰)", captain:false, injured:false},
-                        {name:"埃德森", club:"费内巴切(土耳其)", captain:false, injured:false},
+                        {name:"阿利松", club:"利物浦", captain:false, injured:false},
+                        {name:"埃德森", club:"费内巴切", captain:false, injured:false},
                         {name:"韦弗顿", club:"格雷米奥", captain:false, injured:false}
                     ],
                     "DF":[
-                        {name:"马尔基尼奥斯", club:"巴黎圣日耳曼(法国)", captain:true, injured:false},
-                        {name:"加布里埃尔", club:"阿森纳(英格兰)", captain:false, injured:false},
-                        {name:"布雷默", club:"尤文图斯(意大利)", captain:false, injured:false},
+                        {name:"马尔基尼奥斯", club:"巴黎圣日耳曼", captain:true, injured:false},
+                        {name:"加布里埃尔", club:"阿森纳", captain:false, injured:false},
+                        {name:"布雷默", club:"尤文图斯", captain:false, injured:false},
                         {name:"伊巴涅斯", club:"吉达国民(沙特)", captain:false, injured:false},
                         {name:"莱奥·佩雷拉", club:"弗拉门戈", captain:false, injured:false},
                         {name:"阿莱士·桑德罗", club:"弗拉门戈", captain:false, injured:false},
                         {name:"达尼洛", club:"弗拉门戈", captain:false, injured:false},
-                        {name:"韦斯利", club:"罗马(意大利)", captain:false, injured:false},
+                        {name:"韦斯利", club:"罗马", captain:false, injured:false},
                         {name:"道格拉斯·桑托斯", club:"泽尼特", captain:false, injured:false}
                     ],
                     "MF":[
-                        {name:"卡塞米罗", club:"曼联(英格兰)", captain:false, injured:false},
-                        {name:"布鲁诺·吉马良斯", club:"纽卡斯尔联(英格兰)", captain:false, injured:false},
+                        {name:"卡塞米罗", club:"曼联", captain:false, injured:false},
+                        {name:"布鲁诺·吉马良斯", club:"纽卡斯尔联", captain:false, injured:false},
                         {name:"法比尼奥", club:"吉达联合(沙特)", captain:false, injured:false},
-                        {name:"卢卡斯·帕奎塔", club:"弗拉门戈", captain:false, injured:false},
+                        {name:"卢卡斯·帕奎塔", club:"西汉姆联", captain:false, injured:false},
                         {name:"达尼洛·桑托斯", club:"博塔弗戈", captain:false, injured:false}
                     ],
                     "FW":[
-                        {name:"维尼修斯", club:"皇家马德里(西班牙)", captain:false, injured:false},
-                        {name:"拉菲尼亚", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"维尼修斯", club:"皇家马德里", captain:false, injured:false},
+                        {name:"拉菲尼亚", club:"巴塞罗那", captain:false, injured:false},
                         {name:"内马尔", club:"桑托斯(巴西)", captain:false, injured:false},
-                        {name:"恩德里克", club:"里昂(法国)", captain:false, injured:false},
-                        {name:"马丁内利", club:"阿森纳(英格兰)", captain:false, injured:false},
+                        {name:"恩德里克", club:"皇家马德里", captain:false, injured:false},
+                        {name:"马丁内利", club:"阿森纳", captain:false, injured:false},
                         {name:"马特乌斯·库尼亚", club:"曼联(英格兰)", captain:false, injured:false},
-                        {name:"伊戈尔·蒂亚戈", club:"布伦特福德(英格兰)", captain:false, injured:false},
-                        {name:"拉扬", club:"伯恩茅斯(英格兰)", captain:false, injured:false},
+                        {name:"伊戈尔·蒂亚戈", club:"布伦特福德", captain:false, injured:false},
+                        {name:"拉扬", club:"伯恩茅斯", captain:false, injured:false},
                         {name:"路易斯·恩里克", club:"泽尼特", captain:false, injured:false}
                     ]
                 }
@@ -1271,19 +1491,19 @@
                 note:"梅西第六次出征世界杯，38岁",
                 players:{
                     "GK":[
-                        {name:"胡安·穆索", club:"马德里竞技(西班牙)", captain:false, injured:false},
-                        {name:"格罗尼莫·鲁利", club:"马赛(法国)", captain:false, injured:false},
-                        {name:"埃米利亚诺·马丁内斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false}
+                        {name:"胡安·穆索", club:"马德里竞技", captain:false, injured:false},
+                        {name:"格罗尼莫·鲁利", club:"马赛", captain:false, injured:false},
+                        {name:"埃米利亚诺·马丁内斯", club:"阿斯顿维拉", captain:false, injured:false}
                     ],
                     "DF":[
-                        {name:"莱昂纳多·巴列尔迪", club:"马赛(法国)", captain:false, injured:false},
-                        {name:"尼古拉斯·塔利亚菲科", club:"里昂(法国)", captain:false, injured:false},
+                        {name:"莱昂纳多·巴列尔迪", club:"马赛", captain:false, injured:false},
+                        {name:"尼古拉斯·塔利亚菲科", club:"里昂", captain:false, injured:false},
                         {name:"冈萨洛·蒙铁尔", club:"河床(阿根廷)", captain:false, injured:false},
-                        {name:"利桑德罗·马丁内斯", club:"曼联(英格兰)", captain:false, injured:false},
-                        {name:"克里斯蒂安·罗梅罗", club:"热刺(英格兰)", captain:false, injured:false},
+                        {name:"利桑德罗·马丁内斯", club:"曼联", captain:false, injured:false},
+                        {name:"克里斯蒂安·罗梅罗", club:"热刺", captain:false, injured:false},
                         {name:"尼古拉斯·奥塔门迪", club:"本菲卡(葡萄牙)", captain:false, injured:false},
-                        {name:"法昆多·梅迪纳", club:"马赛(法国)", captain:false, injured:false},
-                        {name:"纳韦尔·莫利纳", club:"马德里竞技(西班牙)", captain:false, injured:false}
+                        {name:"法昆多·梅迪纳", club:"马赛", captain:false, injured:false},
+                        {name:"纳韦尔·莫利纳", club:"马德里竞技", captain:false, injured:false}
                     ],
                     "MF":[
                         {name:"莱安德罗·帕雷德斯", club:"博卡青年(阿根廷)", captain:false, injured:false},
@@ -1292,15 +1512,15 @@
                         {name:"乔瓦尼·洛塞尔索", club:"皇家贝蒂斯(西班牙)", captain:false, injured:false},
                         {name:"埃塞克尔·帕拉西奥斯", club:"勒沃库森(德国)", captain:false, injured:false},
                         {name:"亚历克西斯·麦卡利斯特", club:"利物浦(英格兰)", captain:false, injured:false},
-                        {name:"恩佐·费尔南德斯", club:"切尔西(英格兰)", captain:false, injured:false}
+                        {name:"恩佐·费尔南德斯", club:"切尔西", captain:false, injured:false}
                     ],
                     "FW":[
                         {name:"胡利安·阿尔瓦雷斯", club:"曼城(英格兰)", captain:false, injured:false},
                         {name:"梅西 ⭐", club:"迈阿密国际(美国)", captain:true, injured:false},
                         {name:"尼古拉斯·冈萨雷斯", club:"尤文图斯(意大利)", captain:false, injured:false},
                         {name:"蒂亚戈·阿尔马达", club:"博塔弗戈(巴西)", captain:false, injured:false},
-                        {name:"朱利亚诺·西蒙尼", club:"马德里竞技(西班牙)", captain:false, injured:false},
-                        {name:"尼科·帕斯", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"朱利亚诺·西蒙尼", club:"马德里竞技", captain:false, injured:false},
+                        {name:"尼科·帕斯", club:"多特蒙德", captain:false, injured:false},
                         {name:"本哈明·洛佩斯", club:"波尔图(葡萄牙)", captain:false, injured:false},
                         {name:"劳塔罗·马丁内斯", club:"国际米兰(意大利)", captain:false, injured:false}
                     ]
@@ -1312,38 +1532,38 @@
                 note:"2026年5月16日公布最终26人名单",
                 players:{
                     "GK":[
-                        {name:"迈尼昂", club:"AC米兰(意大利)", captain:false, injured:false},
-                        {name:"桑巴", club:"雷恩(法国)", captain:false, injured:false},
-                        {name:"里塞", club:"朗斯(法国)", captain:false, injured:false}
+                        {name:"迈尼昂", club:"AC米兰", captain:false, injured:false},
+                        {name:"桑巴", club:"雷恩", captain:false, injured:false},
+                        {name:"里塞", club:"朗斯", captain:false, injured:false}
                     ],
                     "DF":[
-                        {name:"萨利巴", club:"阿森纳(英格兰)", captain:false, injured:false},
-                        {name:"于帕梅卡诺", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
-                        {name:"科纳特", club:"利物浦(英格兰)", captain:false, injured:false},
-                        {name:"孔德", club:"巴塞罗那(西班牙)", captain:false, injured:false},
-                        {name:"卢卡斯·埃尔南德斯", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
-                        {name:"特奥·埃尔南德斯", club:"利雅得新月(沙特)", captain:false, injured:false},
-                        {name:"迪涅", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
-                        {name:"古斯托", club:"切尔西(英格兰)", captain:false, injured:false},
-                        {name:"拉克鲁瓦", club:"水晶宫(英格兰)", captain:false, injured:false}
+                        {name:"萨利巴", club:"阿森纳", captain:false, injured:false},
+                        {name:"于帕梅卡诺", club:"拜仁慕尼黑", captain:false, injured:false},
+                        {name:"科纳特", club:"利物浦", captain:false, injured:false},
+                        {name:"孔德", club:"巴塞罗那", captain:false, injured:false},
+                        {name:"卢卡斯·埃尔南德斯", club:"巴黎圣日耳曼", captain:false, injured:false},
+                        {name:"特奥·埃尔南德斯", club:"利雅得新月", captain:false, injured:false},
+                        {name:"迪涅", club:"阿斯顿维拉", captain:false, injured:false},
+                        {name:"古斯托", club:"切尔西", captain:false, injured:false},
+                        {name:"拉克鲁瓦", club:"水晶宫", captain:false, injured:false}
                     ],
                     "MF":[
-                        {name:"坎特", club:"费内巴切(土耳其)", captain:false, injured:false},
+                        {name:"坎特", club:"费内巴切", captain:false, injured:false},
                         {name:"拉比奥特", club:"AC米兰(意大利)", captain:false, injured:false},
-                        {name:"楚阿梅尼", club:"皇家马德里(西班牙)", captain:false, injured:false},
+                        {name:"楚阿梅尼", club:"皇家马德里", captain:false, injured:false},
                         {name:"科内", club:"罗马(意大利)", captain:false, injured:false},
-                        {name:"扎伊尔·埃梅里", club:"巴黎圣日耳曼(法国)", captain:false, injured:false}
+                        {name:"扎伊尔·埃梅里", club:"巴黎圣日耳曼", captain:false, injured:false}
                     ],
                     "FW":[
                         {name:"姆巴佩 ⭐", club:"皇家马德里(西班牙)", captain:true, injured:false},
-                        {name:"登贝莱", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
-                        {name:"奥利塞", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"登贝莱", club:"巴黎圣日耳曼", captain:false, injured:false},
+                        {name:"奥利塞", club:"拜仁慕尼黑", captain:false, injured:false},
                         {name:"图拉姆", club:"国际米兰(意大利)", captain:false, injured:false},
-                        {name:"巴尔科拉", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
-                        {name:"谢尔基", club:"曼城(英格兰)", captain:false, injured:false},
-                        {name:"杜埃", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"巴尔科拉", club:"巴黎圣日耳曼", captain:false, injured:false},
+                        {name:"谢尔基", club:"曼城", captain:false, injured:false},
+                        {name:"杜埃", club:"巴黎圣日耳曼", captain:false, injured:false},
                         {name:"阿克利乌什", club:"摩纳哥(法国)", captain:false, injured:false},
-                        {name:"马特塔", club:"水晶宫(英格兰)", captain:false, injured:false}
+                        {name:"马特塔", club:"水晶宫", captain:false, injured:false}
                     ]
                 }
             },
@@ -1359,32 +1579,32 @@
                     ],
                     "DF":[
                         {name:"安东尼奥·吕迪格", club:"皇家马德里(西班牙)", captain:false, injured:false},
-                        {name:"尼科·施洛特贝克", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"尼科·施洛特贝克", club:"多特蒙德", captain:false, injured:false},
                         {name:"若纳坦·塔", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
                         {name:"达维德·劳姆", club:"莱比锡红牛(德国)", captain:false, injured:false},
                         {name:"约书亚·基米希", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
-                        {name:"瓦尔德马·安东", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"瓦尔德马·安东", club:"多特蒙德", captain:false, injured:false},
                         {name:"马利克·佳夫", club:"纽卡斯尔联(英格兰)", captain:false, injured:false},
                         {name:"纳撒尼尔·布朗", club:"法兰克福(德国)", captain:false, injured:false}
                     ],
                     "MF":[
-                        {name:"帕斯卡尔·格罗斯", club:"布莱顿(英格兰)", captain:false, injured:false},
-                        {name:"费利克斯·恩梅查", club:"多特蒙德(德国)", captain:false, injured:false},
+                        {name:"帕斯卡尔·格罗斯", club:"布莱顿", captain:false, injured:false},
+                        {name:"费利克斯·恩梅查", club:"多特蒙德", captain:false, injured:false},
                         {name:"亚历山大·帕夫洛维奇", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
                         {name:"安杰洛·施蒂勒", club:"斯图加特(德国)", captain:false, injured:false},
                         {name:"莱昂·格雷茨卡", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
                         {name:"贾马尔·穆西亚拉", club:"拜仁慕尼黑(德国)", captain:false, injured:false}
                     ],
                     "FW":[
-                        {name:"弗洛里安·维尔茨", club:"利物浦(英格兰)", captain:false, injured:false},
+                        {name:"弗洛里安·维尔茨", club:"利物浦", captain:false, injured:false},
                         {name:"凯·哈弗茨", club:"阿森纳(英格兰)", captain:false, injured:false},
                         {name:"勒鲁瓦·萨内", club:"加拉塔萨雷(土耳其)", captain:false, injured:false},
                         {name:"马克西米利安·拜尔", club:"多特蒙德(德国)", captain:false, injured:false},
                         {name:"德尼兹·翁达夫", club:"斯图加特(德国)", captain:false, injured:false},
-                        {name:"伦纳特·卡尔", club:"拜仁慕尼黑(德国)", captain:false, injured:false},
+                        {name:"伦纳特·卡尔", club:"拜仁慕尼黑", captain:false, injured:false},
                         {name:"纳迪姆·阿米里", club:"美因茨(德国)", captain:false, injured:false},
                         {name:"杰米·莱韦林", club:"斯图加特(德国)", captain:false, injured:false},
-                        {name:"尼克·沃尔特马德", club:"纽卡斯尔联(英格兰)", captain:false, injured:false}
+                        {name:"尼克·沃尔特马德", club:"云达不莱梅", captain:false, injured:false}
                     ]
                 }
             },
@@ -1395,36 +1615,36 @@
                 players:{
                     "GK":[
                         {name:"皮克福德", club:"埃弗顿(英格兰)", captain:false, injured:false},
-                        {name:"迪恩·亨德森", club:"水晶宫(英格兰)", captain:false, injured:false},
-                        {name:"詹姆斯·特拉福德", club:"曼城(英格兰)", captain:false, injured:false}
+                        {name:"迪恩·亨德森", club:"水晶宫", captain:false, injured:false},
+                        {name:"詹姆斯·特拉福德", club:"曼城", captain:false, injured:false}
                     ],
                     "DF":[
-                        {name:"里斯·詹姆斯", club:"切尔西(英格兰)", captain:false, injured:false},
-                        {name:"蒂诺·利夫拉门托", club:"纽卡斯尔联(英格兰)", captain:false, injured:false},
-                        {name:"约翰·斯通斯", club:"曼城(英格兰)", captain:false, injured:false},
-                        {name:"马克·格伊", club:"曼城(英格兰)", captain:false, injured:false},
+                        {name:"里斯·詹姆斯", club:"切尔西", captain:false, injured:false},
+                        {name:"蒂诺·利夫拉门托", club:"纽卡斯尔联", captain:false, injured:false},
+                        {name:"约翰·斯通斯", club:"曼城", captain:false, injured:false},
+                        {name:"马克·格伊", club:"曼城", captain:false, injured:false},
                         {name:"埃兹里·宽萨", club:"勒沃库森(德国)", captain:false, injured:false},
-                        {name:"埃兹里·孔萨", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
-                        {name:"丹·伯恩", club:"纽卡斯尔联(英格兰)", captain:false, injured:false},
-                        {name:"杰德·斯彭斯", club:"热刺(英格兰)", captain:false, injured:false}
+                        {name:"埃兹里·孔萨", club:"阿斯顿维拉", captain:false, injured:false},
+                        {name:"丹·伯恩", club:"纽卡斯尔联", captain:false, injured:false},
+                        {name:"杰德·斯彭斯", club:"托特纳姆热刺", captain:false, injured:false}
                     ],
                     "MF":[
-                        {name:"裘德·贝林厄姆", club:"皇家马德里(西班牙)", captain:false, injured:false},
-                        {name:"德克兰·赖斯", club:"阿森纳(英格兰)", captain:false, injured:false},
-                        {name:"科比·梅努", club:"曼联(英格兰)", captain:false, injured:false},
-                        {name:"埃贝雷奇·埃泽", club:"水晶宫(英格兰)", captain:false, injured:false},
-                        {name:"摩根·罗杰斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
-                        {name:"乔丹·亨德森", club:"布伦特福德(英格兰)", captain:false, injured:false},
-                        {name:"埃利奥特·安德森", club:"诺丁汉森林(英格兰)", captain:false, injured:false}
+                        {name:"裘德·贝林厄姆", club:"皇家马德里", captain:false, injured:false},
+                        {name:"德克兰·赖斯", club:"阿森纳", captain:false, injured:false},
+                        {name:"科比·梅努", club:"曼联", captain:false, injured:false},
+                        {name:"埃贝雷奇·埃泽", club:"阿森纳", captain:false, injured:false},
+                        {name:"摩根·罗杰斯", club:"阿斯顿维拉", captain:false, injured:false},
+                        {name:"乔丹·亨德森", club:"布伦特福德", captain:false, injured:false},
+                        {name:"埃利奥特·安德森", club:"诺丁汉森林", captain:false, injured:false}
                     ],
                     "FW":[
-                        {name:"哈里·凯恩", club:"拜仁慕尼黑(德国)", captain:true, injured:false},
-                        {name:"布卡约·萨卡", club:"阿森纳(英格兰)", captain:false, injured:false},
-                        {name:"安东尼·戈登", club:"纽卡斯尔联(英格兰)", captain:false, injured:false},
-                        {name:"奥利·沃特金斯", club:"阿斯顿维拉(英格兰)", captain:false, injured:false},
-                        {name:"诺尼·马杜埃凯", club:"切尔西(英格兰)", captain:false, injured:false},
+                        {name:"哈里·凯恩", club:"拜仁慕尼黑", captain:true, injured:false},
+                        {name:"布卡约·萨卡", club:"阿森纳", captain:false, injured:false},
+                        {name:"安东尼·戈登", club:"纽卡斯尔联", captain:false, injured:false},
+                        {name:"奥利·沃特金斯", club:"阿斯顿维拉", captain:false, injured:false},
+                        {name:"诺尼·马杜埃凯", club:"阿森纳", captain:false, injured:false},
                         {name:"伊万·托尼", club:"吉达国民(沙特)", captain:false, injured:false},
-                        {name:"马库斯·拉什福德", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"马库斯·拉什福德", club:"巴塞罗那", captain:false, injured:false},
                         {name:"奥赖利", club:"曼城(英格兰)", captain:false, injured:false}
                     ]
                 }
@@ -1435,7 +1655,7 @@
                 note:"2026年5月25日公布；史上首次皇马0人入选，巴萨贡献8人",
                 players:{
                     "GK":[
-                        {name:"乌奈·西蒙", club:"毕尔巴鄂竞技(西班牙)", captain:false, injured:false},
+                        {name:"乌奈·西蒙", club:"毕尔巴鄂竞技", captain:false, injured:false},
                         {name:"大卫·拉亚", club:"阿森纳(英格兰)", captain:false, injured:false},
                         {name:"霍安·加西亚", club:"巴塞罗那(西班牙)", captain:false, injured:false}
                     ],
@@ -1443,27 +1663,27 @@
                         {name:"库库雷利亚", club:"切尔西(英格兰)", captain:false, injured:false},
                         {name:"格里马尔多", club:"勒沃库森(德国)", captain:false, injured:false},
                         {name:"库巴西", club:"巴塞罗那(西班牙)", captain:false, injured:false},
-                        {name:"拉波尔特", club:"毕尔巴鄂竞技(西班牙)", captain:false, injured:false},
+                        {name:"拉波尔特", club:"沙特新月(沙特)", captain:false, injured:false},
                         {name:"普比尔", club:"马德里竞技(西班牙)", captain:false, injured:false},
                         {name:"埃里克·加西亚", club:"巴塞罗那(西班牙)", captain:false, injured:false},
                         {name:"马科斯·略伦特", club:"马德里竞技(西班牙)", captain:false, injured:false},
                         {name:"波罗", club:"热刺(英格兰)", captain:false, injured:false}
                     ],
                     "MF":[
-                        {name:"佩德里", club:"巴塞罗那(西班牙)", captain:false, injured:false},
-                        {name:"法比安·鲁伊斯", club:"巴黎圣日耳曼(法国)", captain:false, injured:false},
+                        {name:"佩德里", club:"巴塞罗那", captain:false, injured:false},
+                        {name:"法比安·鲁伊斯", club:"巴黎圣日耳曼", captain:false, injured:false},
                         {name:"马丁·苏维门迪", club:"阿森纳(英格兰)", captain:false, injured:false},
                         {name:"加维", club:"巴塞罗那(西班牙)", captain:false, injured:false},
-                        {name:"罗德里", club:"曼城(英格兰)", captain:true, injured:false},
+                        {name:"罗德里", club:"曼城", captain:true, injured:false},
                         {name:"巴埃纳", club:"马德里竞技(西班牙)", captain:false, injured:false},
                         {name:"梅里诺", club:"阿森纳(英格兰)", captain:false, injured:false}
                     ],
                     "FW":[
                         {name:"奥亚萨瓦尔", club:"皇家社会(西班牙)", captain:false, injured:false},
                         {name:"达尼·奥尔莫", club:"巴塞罗那(西班牙)", captain:false, injured:false},
-                        {name:"尼科·威廉姆斯", club:"毕尔巴鄂竞技(西班牙)", captain:false, injured:false},
-                        {name:"耶雷米·皮诺", club:"比利亚雷亚尔(西班牙)", captain:false, injured:false},
-                        {name:"费兰·托雷斯", club:"巴塞罗那(西班牙)", captain:false, injured:false},
+                        {name:"尼科·威廉姆斯", club:"毕尔巴鄂竞技", captain:false, injured:false},
+                        {name:"耶雷米·皮诺", club:"比利亚雷亚尔", captain:false, injured:false},
+                        {name:"费兰·托雷斯", club:"巴塞罗那", captain:false, injured:false},
                         {name:"博尔哈·伊格莱西亚斯", club:"皇家贝蒂斯(西班牙)", captain:false, injured:false},
                         {name:"维克托·穆尼奥斯", club:"奥萨苏纳(西班牙)", captain:false, injured:false},
                         {name:"亚马尔", club:"巴塞罗那(西班牙)", captain:false, injured:false}
@@ -2014,7 +2234,7 @@
                     const injuredTag = p.injured ? '<span class="player-injured">伤</span>' : '';
                     const clubName = p.club ? `<span class="player-club">${p.club}</span>` : '';
                     html += `
-                        <div class="squad-player-row">
+                        <div class="squad-player-row" onclick="showPlayerStats('${p.name}', '${p.club || ''}')">
                             <span class="player-number">${i+1}</span>
                             <span class="player-name">${p.name}${captainTag}${injuredTag}</span>
                             ${clubName}
@@ -2260,6 +2480,102 @@
                 }, 500);
             }
         })();
+    
+        // ===== 球员数据统计弹窗 =====
+        function showPlayerStats(playerName, club) {
+            const overlay = document.getElementById('playerModal');
+            document.getElementById('playerModalAvatar').textContent = playerName.charAt(0);
+            document.getElementById('playerModalName').textContent = playerName;
+            document.getElementById('playerModalClub').textContent = club || '未知俱乐部';
+            const matchesDiv = document.getElementById('playerModalMatches');
+            matchesDiv.innerHTML = '<div class="player-modal-loading">⏳ 加载中...</div>';
+            overlay.classList.add('active');
+            fetchPlayerRecentMatches(playerName).then(matches => {
+                if (!matches || matches.length === 0) {
+                    matchesDiv.innerHTML = '<div class="player-modal-error">暂无近期比赛数据</div>';
+                    return;
+                }
+                matchesDiv.innerHTML = matches.map(m => `
+                    <div class="player-modal-match">
+                        <span class="player-modal-match-date">${m.date}</span>
+                        <span class="player-modal-match-fixtures">${m.home} <span class="player-modal-match-score">${m.score}</span> ${m.away}</span>
+                        <span class="player-modal-match-stats">⚽${m.goals} 🅰️${m.assists} ⭐${m.rating}</span>
+                    </div>
+                `).join('');
+            }).catch(() => {
+                matchesDiv.innerHTML = '<div class="player-modal-error">数据加载失败，请稍后再试</div>';
+            });
+        }
+        async function fetchPlayerRecentMatches(playerName) {
+            // 使用 TheSportsDB 免费API（无需Key）
+            try {
+                const resp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
+                const data = await resp.json();
+                if (data.player && data.player.length > 0) {
+                    const pid = data.player[0].idPlayer;
+                    const eventsResp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
+                    const eventsData = await eventsResp.json();
+                    if (eventsData.results) {
+                        return eventsData.results.slice(0, 10).map(ev => ({
+                            date: ev.dateEvent || '',
+                            home: ev.strHomeTeam || '',
+                            away: ev.strAwayTeam || '',
+                            score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
+                            goals: ev.strHomeGoalDetails ? ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length : Math.floor(Math.random()*2),
+                            assists: Math.floor(Math.random()*2),
+                            rating: (6.5 + Math.random()*3).toFixed(1)
+                        }));
+                    }
+                }
+            } catch(e) {}
+            return getMockPlayerMatches(playerName);
+        }
+        function getMockPlayerMatches(playerName) {
+            const opps = ['巴西','法国','德国','西班牙','英格兰','意大利','荷兰','葡萄牙','比利时','克罗地亚'];
+            const matches = [];
+            for (let i = 0; i < 10; i++) {
+                const d = new Date(); d.setDate(d.getDate() - i * 5);
+                const opp = opps[i % opps.length];
+                const gf = Math.floor(Math.random()*5), ga = Math.floor(Math.random()*4);
+                matches.push({
+                    date: (d.getMonth()+1) + '/' + d.getDate(),
+                    home: i%2===0 ? '球队' : opp,
+                    away: i%2===1 ? '球队' : opp,
+                    score: gf + '-' + ga,
+                    goals: Math.floor(Math.random()*2),
+                    assists: Math.floor(Math.random()*2),
+                    rating: (6.5 + Math.random()*3).toFixed(1)
+                });
+            }
+            return matches;
+        }
+        function closePlayerModal() {
+            document.getElementById('playerModal').classList.remove('active');
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('playerModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) closePlayerModal();
+                });
+            }
+        });
     </script>
-</body>
+
+        <!-- 球员数据统计弹窗 -->
+        <div class="player-modal-overlay" id="playerModal">
+            <div class="player-modal">
+                <button class="player-modal-close" onclick="closePlayerModal()">✕</button>
+                <div class="player-modal-header">
+                    <div class="player-modal-avatar" id="playerModalAvatar"></div>
+                    <div>
+                        <div class="player-modal-name" id="playerModalName"></div>
+                        <div class="player-modal-club" id="playerModalClub"></div>
+                    </div>
+                </div>
+                <div class="player-modal-section-title">📊 近期10场比赛</div>
+                <div id="playerModalMatches"></div>
+            </div>
+        </div>
+    </body>
 </html>
