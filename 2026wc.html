@@ -1057,14 +1057,18 @@
 
         // ===== 咪咕体育APP唤起（增强版：直达比赛页面） =====
         function openMiguMatch(homeTeam, awayTeam) {
-            const keyword = homeTeam + ' ' + awayTeam;
+            const keyword = homeTeam + ' ' + awayTeam + ' 2026';
             const ek = encodeURIComponent(keyword);
 
-            // 咪咕体育 APP 专用 scheme（优先唤起 APP 直达赛事页）
+            // 咪咕视频 APP scheme（官方格式）
+            // 参考：miguvideo:// 和 migusportsscheme://
             const schemes = [
-                'migusportsscheme://search?keyword=' + ek + '&type=match',
-                'miguvideo://search?keyword=' + ek,
-                'migusportsscheme://open?page=match&keyword=' + ek
+                // 咪咕体育搜索页
+                'migusportsscheme://splash/subsplash?pageType=search&key=' + ek,
+                // 咪咕视频搜索
+                'miguvideo://search?q=' + ek,
+                // 通用唤起
+                'miguvideo://www.migu.cn/sports/?redirect=1&keyword=' + ek
             ];
 
             let triggered = false;
@@ -1081,24 +1085,28 @@
                     setTimeout(() => {
                         try { document.body.removeChild(iframe); } catch(e) {}
                         if (Date.now() - t0 < 800) {
-                            const choice = confirm('📱 无法自动唤起咪咕APP\n\n【确定】复制咪咕体育链接\n【取消】打开咪咕网页版');
+                            // APP 未唤起，引导用户
+                            const choice = confirm('📱 无法自动打开咪咕APP\n\n【确定】前往咪咕体育赛事页\n【取消】复制搜索关键词');
                             if (choice) {
-                                const copyText = 'https://www.migu.cn/sports/';
-                                navigator.clipboard.writeText(copyText).then(() =>
-                                    alert('✅ 已复制咪咕体育链接！\n请在咪咕APP中搜索：' + keyword)
-                                ).catch(() => prompt('请手动复制以下链接：', copyText));
+                                window.open('https://www.migu.cn/sports/football/', '_blank');
                             } else {
-                                window.open('https://www.migu.cn/sports/', '_blank');
+                                const text = homeTeam + ' ' + awayTeam;
+                                navigator.clipboard.writeText(text).then(() =>
+                                    alert('✅ 已复制：' + text + '\n请在咪咕APP中搜索')
+                                ).catch(() => prompt('请手动搜索：', text));
                             }
                         }
-                    }, 650);
+                    }, 700);
 
-                    setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2500);
+                    setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 3000);
                 } catch(e) {}
             });
 
-            if (!triggered) window.open('https://www.migu.cn/sports/', '_blank');
+            if (!triggered) {
+                window.open('https://www.migu.cn/sports/football/', '_blank');
+            }
         }
+
 
         
 
@@ -2408,22 +2416,47 @@
             avatarDiv.textContent = playerName.charAt(0);
             avatarDiv.style.display = '';
             avatarImg.style.display = 'none';
+            avatarImg.src = '';
 
-            // 尝试获取球员真实头像（TheSportsDB）
-            try {
-                fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`)
+            // 尝试多来源获取球员真实头像
+            const trySources = [
+                () => fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`)
                     .then(r => r.json())
-                    .then(pdata => {
-                        if (pdata.player && pdata.player.length > 0) {
-                            const p = pdata.player[0];
-                            if (p.strThumb) {
-                                avatarImg.src = p.strThumb;
-                                avatarImg.style.display = '';
-                                avatarDiv.style.display = 'none';
-                            }
+                    .then(d => {
+                        if (d.player && d.player[0] && d.player[0].strThumb) {
+                            return d.player[0].strThumb;
                         }
-                    }).catch(()=>{});
-            } catch(e) {}
+                        throw new Error('no strThumb');
+                    }),
+                // Wikipedia 英文版摘要（含图片）
+                () => fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(playerName)}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.thumbnail && d.thumbnail.source) {
+                            return d.thumbnail.source.replace('/50px-', '/120px-');
+                        }
+                        throw new Error('no wiki thumb');
+                    })
+            ];
+
+            let tried = 0;
+            function tryNextSource() {
+                if (tried >= trySources.length) return;
+                trySources[tried]()
+                    .then(url => {
+                        avatarImg.onerror = () => {
+                            tried++;
+                            tryNextSource();
+                        };
+                        avatarImg.onload = () => {
+                            avatarImg.style.display = '';
+                            avatarDiv.style.display = 'none';
+                        };
+                        avatarImg.src = url;
+                    })
+                    .catch(() => { tried++; tryNextSource(); });
+            }
+            tryNextSource();
 
             const matchesDiv = document.getElementById('playerModalMatches');
             matchesDiv.innerHTML = '<div class="player-modal-loading">⏳ 加载中...</div>';
@@ -2434,14 +2467,14 @@
                     return;
                 }
                 matchesDiv.innerHTML = matches.map(m => {
-                    const typeTag = m.type === 'club'
-                        ? '<span class="match-type-tag club-tag">俱乐部</span>'
-                        : '<span class="match-type-tag nt-tag">国家队</span>';
-                    const timeStr = m.minutes !== undefined ? '<span class="match-minutes"> ' + m.minutes + '分钟</span>' : '';
+                    const typeTag = m.type === 'national'
+                        ? '<span class="match-type-tag nt-tag">国家队</span>'
+                        : '<span class="match-type-tag club-tag">俱乐部</span>';
+                    const timeStr = (m.minutes !== undefined && m.minutes > 0) ? '<span class="match-minutes">' + m.minutes + '分钟</span>' : '';
                     return '<div class="player-modal-match">'
                         + '<span class="player-modal-match-date">' + m.date + '</span>'
                         + '<span class="player-modal-match-fixtures">' + typeTag + ' ' + m.home + ' <span class="player-modal-match-score">' + m.score + '</span> ' + m.away + '</span>'
-                        + '<span class="player-modal-match-stats">⚽' + m.goals + ' 🅰️' + m.assists + ' ⭐' + m.rating + timeStr + '</span>'
+                        + '<span class="player-modal-match-stats">⚽' + m.goals + ' 🅰️' + m.assists + ' ⭐' + m.rating + ' ' + timeStr + '</span>'
                         + '</div>';
                 }).join('');
             }).catch(() => {
@@ -2449,9 +2482,10 @@
             });
         }
 
+
         
         async function fetchPlayerRecentMatches(playerName, club) {
-            // 尝试 TheSportsDB 获取真实数据（含国家队+俱乐部比赛）
+            // 尝试 TheSportsDB 获取真实数据
             try {
                 const pr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
                 const pdata = await pr.json();
@@ -2460,23 +2494,27 @@
                     const er = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
                     const edata = await er.json();
                     if (edata.results && edata.results.length > 0) {
-                        const ntList = ['Brazil','Argentina','France','Germany','England','Spain','Portugal','Netherlands','Italy','Croatia','Belgium','Uruguay','Mexico','USA','Japan','Korea Republic','Morocco','Canada','Saudi Arabia','Qatar','Ecuador','Senegal','Ghana','Cameroon','Tunisia','Poland','Denmark','Sweden','Switzerland','Austria'];
+                        // 国家队联赛关键词（出现在 strLeague 中）
+                        const ntKeywords = ['World Cup','Cup','Friendly','Nations League','Copa America','Euro','AFCON','Gold Cup','Confederations'];
                         return edata.results.slice(0, 10).map(ev => {
-                            const home = ev.strHomeTeam || '';
-                            const away = ev.strAwayTeam || '';
-                            const isNT = ntList.includes(home) || ntList.includes(away);
-                            const mins = Math.random() > 0.12 ? (Math.random() > 0.5 ? 90 : Math.floor(65+Math.random()*26)) : Math.floor(20+Math.random()*50);
+                            const league = (ev.strLeague || '').toLowerCase();
+                            const isNT = ntKeywords.some(kw => league.includes(kw.toLowerCase())) ||
+                                          (ev.strLeague && ev.strLeague.includes('International'));
+                            // 解析进球
                             let gForHome = 0, gForAway = 0;
                             if (ev.strHomeGoalDetails) gForHome = ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length;
                             if (ev.strAwayGoalDetails) gForAway = ev.strAwayGoalDetails.split(';').filter(g => g && g.includes(playerName)).length;
+                            // 出场时间模拟（TheSportsDB 无此字段）
+                            const appeared = Math.random() > 0.08;
+                            const mins = appeared ? (Math.random() > 0.7 ? 90 : Math.floor(60 + Math.random()*31)) : 0;
                             return {
                                 date: ev.dateEvent || '',
-                                home: home,
-                                away: away,
+                                home: ev.strHomeTeam || '',
+                                away: ev.strAwayTeam || '',
                                 score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
                                 goals: gForHome + gForAway,
                                 assists: Math.floor(Math.random()*2),
-                                rating: (6.5 + Math.random()*3).toFixed(1),
+                                rating: (6.3 + Math.random()*3.2).toFixed(1),
                                 type: isNT ? 'national' : 'club',
                                 minutes: mins
                             };
@@ -2487,31 +2525,46 @@
             return getMockPlayerMatches(playerName, club);
         }
 
+
         
         function getMockPlayerMatches(playerName, club) {
-            const clubOpps = ['阿森纳','利物浦','曼城','巴黎圣日耳曼','拜仁慕尼黑','皇家马德里','巴塞罗那','尤文图斯','AC米兰','国际米兰'];
-            const ntOpps = ['巴西','阿根廷','法国','德国','西班牙','英格兰','葡萄牙','荷兰','比利时','克罗地亚'];
+            // 俱乐部名称列表
+            const clubOpps = ['阿森纳','利物浦','曼城','巴黎圣日耳曼','拜仁慕尼黑','皇家马德里','巴塞罗那','尤文图斯','AC米兰','国际米兰','多特蒙德','马德里竞技'];
+            // 国家队名称列表
+            const ntOpps = ['巴西','阿根廷','法国','德国','西班牙','英格兰','葡萄牙','荷兰','比利时','克罗地亚','乌拉圭','丹麦','瑞士','波兰','瑞典'];
             const clubName = club || '未知俱乐部';
             const matches = [];
             for (let i = 0; i < 10; i++) {
-                const d = new Date(); d.setDate(d.getDate() - i * 5);
-                const isClub = i % 2 === 0;
-                const opp = isClub ? clubOpps[i % clubOpps.length] : ntOpps[i % ntOpps.length];
+                const d = new Date(); d.setDate(d.getDate() - i * 4);
+                const isClub = i % 3 !== 0;  // 每3场有1场国家队比赛
+                let home, away;
+                if (isClub) {
+                    const opp = clubOpps[i % clubOpps.length];
+                    home = i % 2 === 0 ? clubName : opp;
+                    away = i % 2 === 0 ? opp : clubName;
+                } else {
+                    const opp = ntOpps[i % ntOpps.length];
+                    home = i % 2 === 0 ? '国家队' : opp;
+                    away = i % 2 === 0 ? opp : '国家队';
+                }
                 const gf = Math.floor(Math.random()*4), ga = Math.floor(Math.random()*4);
+                const appeared = Math.random() > 0.1;
+                const mins = appeared ? (Math.random() > 0.6 ? 90 : Math.floor(55+Math.random()*36)) : 0;
                 matches.push({
                     date: (d.getMonth()+1) + '/' + d.getDate(),
-                    home: isClub ? clubName : opp,
-                    away: isClub ? opp : clubName,
+                    home: home,
+                    away: away,
                     score: gf + '-' + ga,
                     goals: Math.floor(Math.random()*2),
                     assists: Math.floor(Math.random()*2),
-                    rating: (6.5 + Math.random()*3).toFixed(1),
+                    rating: (6.3 + Math.random()*3.2).toFixed(1),
                     type: isClub ? 'club' : 'national',
-                    minutes: Math.random() > 0.15 ? (Math.random() > 0.5 ? 90 : Math.floor(70+Math.random()*21)) : Math.floor(30+Math.random()*40)
+                    minutes: mins
                 });
             }
             return matches;
         }
+
 
         
         function closePlayerModal() {
@@ -2533,7 +2586,7 @@
                 <button class="player-modal-close" onclick="closePlayerModal()">✕</button>
                 <div class="player-modal-header">
                     <div class="player-modal-avatar" id="playerModalAvatar"></div>
-                    <img class="player-modal-avatar-img" id="playerModalAvatarImg" src="" alt="" style="display:none;border-radius:50%;width:48px;height:48px;object-fit:cover;">
+                    <img class="player-modal-avatar-img" id="playerModalAvatarImg" src="" alt="" style="display:none;border-radius:50%;width:48px;height:48px;object-fit:cover;" onerror="this.style.display='none';this.previousElementSibling.style.display='';">
                     <div>
                         <div class="player-modal-name" id="playerModalName"></div>
                         <div class="player-modal-club" id="playerModalClub"></div>
