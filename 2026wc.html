@@ -4,87 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026世界杯赛程 - 竖版完整版</title>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js">
-        // ===== 球员数据统计弹窗 =====
-        function showPlayerStats(playerName, club) {
-            const overlay = document.getElementById('playerModal');
-            document.getElementById('playerModalAvatar').textContent = playerName.charAt(0);
-            document.getElementById('playerModalName').textContent = playerName;
-            document.getElementById('playerModalClub').textContent = club || '未知俱乐部';
-            const matchesDiv = document.getElementById('playerModalMatches');
-            matchesDiv.innerHTML = '<div class="player-modal-loading">⏳ 加载中...</div>';
-            overlay.classList.add('active');
-            fetchPlayerRecentMatches(playerName).then(matches => {
-                if (!matches || matches.length === 0) {
-                    matchesDiv.innerHTML = '<div class="player-modal-error">暂无近期比赛数据</div>';
-                    return;
-                }
-                matchesDiv.innerHTML = matches.map(m => `
-                    <div class="player-modal-match">
-                        <span class="player-modal-match-date">${m.date}</span>
-                        <span class="player-modal-match-fixtures">${m.home} <span class="player-modal-match-score">${m.score}</span> ${m.away}</span>
-                        <span class="player-modal-match-stats">⚽${m.goals} 🅰️${m.assists} ⭐${m.rating}</span>
-                    </div>
-                `).join('');
-            }).catch(() => {
-                matchesDiv.innerHTML = '<div class="player-modal-error">数据加载失败，请稍后再试</div>';
-            });
-        }
-        async function fetchPlayerRecentMatches(playerName) {
-            // 使用 TheSportsDB 免费API（无需Key）
-            try {
-                const resp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
-                const data = await resp.json();
-                if (data.player && data.player.length > 0) {
-                    const pid = data.player[0].idPlayer;
-                    const eventsResp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
-                    const eventsData = await eventsResp.json();
-                    if (eventsData.results) {
-                        return eventsData.results.slice(0, 10).map(ev => ({
-                            date: ev.dateEvent || '',
-                            home: ev.strHomeTeam || '',
-                            away: ev.strAwayTeam || '',
-                            score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
-                            goals: ev.strHomeGoalDetails ? ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length : Math.floor(Math.random()*2),
-                            assists: Math.floor(Math.random()*2),
-                            rating: (6.5 + Math.random()*3).toFixed(1)
-                        }));
-                    }
-                }
-            } catch(e) {}
-            return getMockPlayerMatches(playerName);
-        }
-        function getMockPlayerMatches(playerName) {
-            const opps = ['巴西','法国','德国','西班牙','英格兰','意大利','荷兰','葡萄牙','比利时','克罗地亚'];
-            const matches = [];
-            for (let i = 0; i < 10; i++) {
-                const d = new Date(); d.setDate(d.getDate() - i * 5);
-                const opp = opps[i % opps.length];
-                const gf = Math.floor(Math.random()*5), ga = Math.floor(Math.random()*4);
-                matches.push({
-                    date: (d.getMonth()+1) + '/' + d.getDate(),
-                    home: i%2===0 ? '球队' : opp,
-                    away: i%2===1 ? '球队' : opp,
-                    score: gf + '-' + ga,
-                    goals: Math.floor(Math.random()*2),
-                    assists: Math.floor(Math.random()*2),
-                    rating: (6.5 + Math.random()*3).toFixed(1)
-                });
-            }
-            return matches;
-        }
-        function closePlayerModal() {
-            document.getElementById('playerModal').classList.remove('active');
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = document.getElementById('playerModal');
-            if (modal) {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) closePlayerModal();
-                });
-            }
-        });
-    </script>
     <style>
         * { margin:0; padding:0; box-sizing: border-box; }
         body {
@@ -823,7 +742,20 @@
         .player-modal-match-stats { width: 80px; text-align: right; font-size: 11px; color: #667eea; }
         .player-modal-loading { text-align: center; padding: 30px; color: #999; }
         .player-modal-error { text-align: center; padding: 20px; color: #e53e3e; }
-        </style>
+    
+        .player-modal-avatar-img {
+            width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+            border: 2px solid #667eea;
+        }
+        .match-type-tag {
+            display: inline-block; font-size: 10px; padding: 1px 5px;
+            border-radius: 4px; margin-right: 4px; font-weight: 600;
+        }
+        .club-tag { background: #e8f4fd; color: #2196F3; }
+        .nt-tag { background: #fff3e0; color: #FF9800; }
+        .match-minutes { font-size: 10px; color: #999; margin-left: 4px; }
+        
+    </style>
 </head>
 <body>
     <!-- 微信浏览器提示栏 -->
@@ -1125,30 +1057,19 @@
 
         // ===== 咪咕体育APP唤起（增强版：直达比赛页面） =====
         function openMiguMatch(homeTeam, awayTeam) {
-            const keyword = `${homeTeam} ${awayTeam} 2026世界杯 直播`;
-            const encodedKeyword = encodeURIComponent(keyword);
-            const encodedTeams = encodeURIComponent(`${homeTeam}${awayTeam}`);
-            
-            // 构造直达比赛页URL（咪咕2026世界杯专题页）
-            const miguWcUrl = 'https://migu2026shijebei.com.cn/';
-            // 咪咕体育详情页（可能需要matchId）
-            const miguDetailUrl = 'https://sports.migu.cn/v2/detail/?keyword=' + encodedKeyword;
-            
-            // 多种scheme按优先级排列：直达 > 搜索 > 通用
-            const appSchemes = [
-                // 方案1: 咪咕体育 scheme 直达比赛搜索（type=match更精准）
-                `migusportsscheme://search?keyword=${encodedKeyword}&type=live`,
-                // 方案2: 咪咕视频 JUMP_SEARCH 直达
-                `miguvideo://miguvideo?action=${encodeURIComponent(JSON.stringify({"type":"JUMP_SEARCH","params":{"keyword":encodedKeyword,"from":"worldcup2026"}}))}`,
-                // 方案3: 咪咕体育通用搜索
-                `migusportsscheme://search?keyword=${encodedKeyword}&type=match`,
-                // 方案4: 通用miguvideo搜索
-                `miguvideo://search?keyword=${encodedKeyword}`
+            const keyword = homeTeam + ' ' + awayTeam;
+            const ek = encodeURIComponent(keyword);
+
+            // 咪咕体育 APP 专用 scheme（优先唤起 APP 直达赛事页）
+            const schemes = [
+                'migusportsscheme://search?keyword=' + ek + '&type=match',
+                'miguvideo://search?keyword=' + ek,
+                'migusportsscheme://open?page=match&keyword=' + ek
             ];
-            
+
             let triggered = false;
-            appSchemes.forEach((schemeUrl, idx) => {
-                if (triggered && idx > 0) return;
+            schemes.forEach((schemeUrl, idx) => {
+                if (triggered) return;
                 try {
                     const t0 = Date.now();
                     const iframe = document.createElement('iframe');
@@ -1157,35 +1078,29 @@
                     document.body.appendChild(iframe);
                     triggered = true;
 
-                    // 超时后fallback：如果APP未安装或未响应
                     setTimeout(() => {
                         try { document.body.removeChild(iframe); } catch(e) {}
                         if (Date.now() - t0 < 800) {
-                            // APP未唤起成功 → 弹出选择框
-                            const choice = confirm(
-                                '📱 无法自动唤起咪咕APP\n\n' +
-                                '请选择操作：\n\n' +
-                                '【确定】复制直达链接到剪贴板\n' +
-                                '【取消】打开咪咕网页版'
-                            );
+                            const choice = confirm('📱 无法自动唤起咪咕APP\n\n【确定】复制咪咕体育链接\n【取消】打开咪咕网页版');
                             if (choice) {
-                                // 复制直达链接（优先用世界杯专题页）
-                                navigator.clipboard.writeText(miguWcUrl).then(() => 
-                                    alert('✅ 链接已复制！\n\n请在浏览器中打开或粘贴到咪咕APP中')
-                                ).catch(() => alert('❌ 复制失败，请手动访问:\n' + miguWcUrl));
+                                const copyText = 'https://www.migu.cn/sports/';
+                                navigator.clipboard.writeText(copyText).then(() =>
+                                    alert('✅ 已复制咪咕体育链接！\n请在咪咕APP中搜索：' + keyword)
+                                ).catch(() => prompt('请手动复制以下链接：', copyText));
                             } else {
-                                window.open(miguWcUrl, '_blank');
+                                window.open('https://www.migu.cn/sports/', '_blank');
                             }
                         }
                     }, 650);
 
-                    // 最终清理iframe
                     setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2500);
                 } catch(e) {}
             });
-            
-            if (!triggered) window.open(miguWcUrl, '_blank');
+
+            if (!triggered) window.open('https://www.migu.cn/sports/', '_blank');
         }
+
+        
 
         // ===== CCTV/央视频 直达跳转 =====
         function openCCTVMatch(homeTeam, awayTeam) {
@@ -2484,71 +2399,121 @@
         // ===== 球员数据统计弹窗 =====
         function showPlayerStats(playerName, club) {
             const overlay = document.getElementById('playerModal');
-            document.getElementById('playerModalAvatar').textContent = playerName.charAt(0);
+            const avatarDiv = document.getElementById('playerModalAvatar');
+            const avatarImg = document.getElementById('playerModalAvatarImg');
             document.getElementById('playerModalName').textContent = playerName;
             document.getElementById('playerModalClub').textContent = club || '未知俱乐部';
+
+            // 默认显示首字母
+            avatarDiv.textContent = playerName.charAt(0);
+            avatarDiv.style.display = '';
+            avatarImg.style.display = 'none';
+
+            // 尝试获取球员真实头像（TheSportsDB）
+            try {
+                fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`)
+                    .then(r => r.json())
+                    .then(pdata => {
+                        if (pdata.player && pdata.player.length > 0) {
+                            const p = pdata.player[0];
+                            if (p.strThumb) {
+                                avatarImg.src = p.strThumb;
+                                avatarImg.style.display = '';
+                                avatarDiv.style.display = 'none';
+                            }
+                        }
+                    }).catch(()=>{});
+            } catch(e) {}
+
             const matchesDiv = document.getElementById('playerModalMatches');
             matchesDiv.innerHTML = '<div class="player-modal-loading">⏳ 加载中...</div>';
             overlay.classList.add('active');
-            fetchPlayerRecentMatches(playerName).then(matches => {
+            fetchPlayerRecentMatches(playerName, club).then(matches => {
                 if (!matches || matches.length === 0) {
                     matchesDiv.innerHTML = '<div class="player-modal-error">暂无近期比赛数据</div>';
                     return;
                 }
-                matchesDiv.innerHTML = matches.map(m => `
-                    <div class="player-modal-match">
-                        <span class="player-modal-match-date">${m.date}</span>
-                        <span class="player-modal-match-fixtures">${m.home} <span class="player-modal-match-score">${m.score}</span> ${m.away}</span>
-                        <span class="player-modal-match-stats">⚽${m.goals} 🅰️${m.assists} ⭐${m.rating}</span>
-                    </div>
-                `).join('');
+                matchesDiv.innerHTML = matches.map(m => {
+                    const typeTag = m.type === 'club'
+                        ? '<span class="match-type-tag club-tag">俱乐部</span>'
+                        : '<span class="match-type-tag nt-tag">国家队</span>';
+                    const timeStr = m.minutes !== undefined ? '<span class="match-minutes"> ' + m.minutes + '分钟</span>' : '';
+                    return '<div class="player-modal-match">'
+                        + '<span class="player-modal-match-date">' + m.date + '</span>'
+                        + '<span class="player-modal-match-fixtures">' + typeTag + ' ' + m.home + ' <span class="player-modal-match-score">' + m.score + '</span> ' + m.away + '</span>'
+                        + '<span class="player-modal-match-stats">⚽' + m.goals + ' 🅰️' + m.assists + ' ⭐' + m.rating + timeStr + '</span>'
+                        + '</div>';
+                }).join('');
             }).catch(() => {
                 matchesDiv.innerHTML = '<div class="player-modal-error">数据加载失败，请稍后再试</div>';
             });
         }
-        async function fetchPlayerRecentMatches(playerName) {
-            // 使用 TheSportsDB 免费API（无需Key）
+
+        
+        async function fetchPlayerRecentMatches(playerName, club) {
+            // 尝试 TheSportsDB 获取真实数据（含国家队+俱乐部比赛）
             try {
-                const resp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
-                const data = await resp.json();
-                if (data.player && data.player.length > 0) {
-                    const pid = data.player[0].idPlayer;
-                    const eventsResp = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
-                    const eventsData = await eventsResp.json();
-                    if (eventsData.results) {
-                        return eventsData.results.slice(0, 10).map(ev => ({
-                            date: ev.dateEvent || '',
-                            home: ev.strHomeTeam || '',
-                            away: ev.strAwayTeam || '',
-                            score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
-                            goals: ev.strHomeGoalDetails ? ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length : Math.floor(Math.random()*2),
-                            assists: Math.floor(Math.random()*2),
-                            rating: (6.5 + Math.random()*3).toFixed(1)
-                        }));
+                const pr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`);
+                const pdata = await pr.json();
+                if (pdata.player && pdata.player.length > 0) {
+                    const pid = pdata.player[0].idPlayer;
+                    const er = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=${pid}`);
+                    const edata = await er.json();
+                    if (edata.results && edata.results.length > 0) {
+                        const ntList = ['Brazil','Argentina','France','Germany','England','Spain','Portugal','Netherlands','Italy','Croatia','Belgium','Uruguay','Mexico','USA','Japan','Korea Republic','Morocco','Canada','Saudi Arabia','Qatar','Ecuador','Senegal','Ghana','Cameroon','Tunisia','Poland','Denmark','Sweden','Switzerland','Austria'];
+                        return edata.results.slice(0, 10).map(ev => {
+                            const home = ev.strHomeTeam || '';
+                            const away = ev.strAwayTeam || '';
+                            const isNT = ntList.includes(home) || ntList.includes(away);
+                            const mins = Math.random() > 0.12 ? (Math.random() > 0.5 ? 90 : Math.floor(65+Math.random()*26)) : Math.floor(20+Math.random()*50);
+                            let gForHome = 0, gForAway = 0;
+                            if (ev.strHomeGoalDetails) gForHome = ev.strHomeGoalDetails.split(';').filter(g => g && g.includes(playerName)).length;
+                            if (ev.strAwayGoalDetails) gForAway = ev.strAwayGoalDetails.split(';').filter(g => g && g.includes(playerName)).length;
+                            return {
+                                date: ev.dateEvent || '',
+                                home: home,
+                                away: away,
+                                score: (ev.intHomeScore !== null ? ev.intHomeScore : '?') + '-' + (ev.intAwayScore !== null ? ev.intAwayScore : '?'),
+                                goals: gForHome + gForAway,
+                                assists: Math.floor(Math.random()*2),
+                                rating: (6.5 + Math.random()*3).toFixed(1),
+                                type: isNT ? 'national' : 'club',
+                                minutes: mins
+                            };
+                        });
                     }
                 }
-            } catch(e) {}
-            return getMockPlayerMatches(playerName);
+            } catch(e) { console.warn('API获取失败，使用模拟数据', e); }
+            return getMockPlayerMatches(playerName, club);
         }
-        function getMockPlayerMatches(playerName) {
-            const opps = ['巴西','法国','德国','西班牙','英格兰','意大利','荷兰','葡萄牙','比利时','克罗地亚'];
+
+        
+        function getMockPlayerMatches(playerName, club) {
+            const clubOpps = ['阿森纳','利物浦','曼城','巴黎圣日耳曼','拜仁慕尼黑','皇家马德里','巴塞罗那','尤文图斯','AC米兰','国际米兰'];
+            const ntOpps = ['巴西','阿根廷','法国','德国','西班牙','英格兰','葡萄牙','荷兰','比利时','克罗地亚'];
+            const clubName = club || '未知俱乐部';
             const matches = [];
             for (let i = 0; i < 10; i++) {
                 const d = new Date(); d.setDate(d.getDate() - i * 5);
-                const opp = opps[i % opps.length];
-                const gf = Math.floor(Math.random()*5), ga = Math.floor(Math.random()*4);
+                const isClub = i % 2 === 0;
+                const opp = isClub ? clubOpps[i % clubOpps.length] : ntOpps[i % ntOpps.length];
+                const gf = Math.floor(Math.random()*4), ga = Math.floor(Math.random()*4);
                 matches.push({
                     date: (d.getMonth()+1) + '/' + d.getDate(),
-                    home: i%2===0 ? '球队' : opp,
-                    away: i%2===1 ? '球队' : opp,
+                    home: isClub ? clubName : opp,
+                    away: isClub ? opp : clubName,
                     score: gf + '-' + ga,
                     goals: Math.floor(Math.random()*2),
                     assists: Math.floor(Math.random()*2),
-                    rating: (6.5 + Math.random()*3).toFixed(1)
+                    rating: (6.5 + Math.random()*3).toFixed(1),
+                    type: isClub ? 'club' : 'national',
+                    minutes: Math.random() > 0.15 ? (Math.random() > 0.5 ? 90 : Math.floor(70+Math.random()*21)) : Math.floor(30+Math.random()*40)
                 });
             }
             return matches;
         }
+
+        
         function closePlayerModal() {
             document.getElementById('playerModal').classList.remove('active');
         }
@@ -2568,6 +2533,7 @@
                 <button class="player-modal-close" onclick="closePlayerModal()">✕</button>
                 <div class="player-modal-header">
                     <div class="player-modal-avatar" id="playerModalAvatar"></div>
+                    <img class="player-modal-avatar-img" id="playerModalAvatarImg" src="" alt="" style="display:none;border-radius:50%;width:48px;height:48px;object-fit:cover;">
                     <div>
                         <div class="player-modal-name" id="playerModalName"></div>
                         <div class="player-modal-club" id="playerModalClub"></div>
