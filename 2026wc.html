@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026世界杯赛程 - 竖版完整版</title>
+    <script src="playerMatches.js"></script>
+    <script>
+    // 兼容层：如果 playerMatches.js 使用 module.exports，则转换为全局变量
+    // （playerMatches.js 已经是 var playerMatches = ... 格式，直接可用）
+    </script>
     <style>
         * { margin:0; padding:0; box-sizing: border-box; }
         body {
@@ -2686,6 +2691,11 @@
         }
 
         async function fetchPlayerRecentMatches(playerName, club) {
+            // 优先使用本地预生成数据（与小程序 v1.1.6 一致）
+            if (typeof playerMatches !== 'undefined' && playerMatches[playerName]) {
+                console.log('[Matches] 使用本地数据:', playerName, playerMatches[playerName].length, '场');
+                return playerMatches[playerName];
+            }
             // 策略：同时获取俱乐部比赛 + 国家队比赛
             // 比分来自API真实数据；个人表现（进球/助攻/评分）通过解析进球详情 + 合理估算生成
             let clubMatches = [];
