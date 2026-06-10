@@ -1,6 +1,9 @@
-// playerMatches.js (HTML网页版)
+// data/playerMatches.js
 // 球员近10场比赛数据（基于2026世界杯前真实足球赛历预生成）
-var playerMatches = {
+// 包含：联赛收官轮 + 欧冠淘汰赛 + 国内杯赛决赛 + 国家队热身赛
+// 生成时间：自动
+
+const playerMatches = {
   "奥乔亚": [
     {
       "date": "05/27/26",
@@ -118348,3 +118351,5 @@ var playerMatches = {
     }
   ]
 };
+
+module.exports = { playerMatches };
