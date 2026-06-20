@@ -1,0 +1,369 @@
+/* pages/squad/squad.wxss */
+.team-filter {
+  display: flex;
+  background: #f8f9fa;
+  padding: 20rpx;
+  gap: 16rpx;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.team-btn {
+  padding: 16rpx 24rpx;
+  border: 2rpx solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  font-weight: bold;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.team-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+.squad-content {
+  padding: 20rpx;
+  height: calc(100vh - 260rpx);
+}
+
+.squad-card {
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+}
+
+.squad-header {
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 4rpx solid #f0f0f0;
+}
+
+.squad-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.squad-coach {
+  font-size: 26rpx;
+  color: #667eea;
+  background: #f0f3ff;
+  padding: 10rpx 20rpx;
+  border-radius: 12rpx;
+  display: inline-block;
+}
+
+.squad-note {
+  font-size: 22rpx;
+  color: #f5576c;
+  margin-top: 12rpx;
+  font-weight: bold;
+}
+
+.pos-section {
+  margin-top: 24rpx;
+}
+
+.pos-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 16rpx;
+  padding-left: 12rpx;
+  border-left: 6rpx solid #667eea;
+}
+
+.players-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.player-item {
+  width: calc(50% - 6rpx);
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  padding: 16rpx;
+}
+
+.player-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.player-name.captain {
+  font-weight: bold;
+}
+
+.player-name.injured {
+  color: #e53;
+}
+
+.badge-captain {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+  padding: 2rpx 10rpx;
+  border-radius: 20rpx;
+  font-size: 20rpx;
+  font-weight: bold;
+}
+
+.badge-injured {
+  background: #fee;
+  color: #e53;
+  padding: 2rpx 10rpx;
+  border-radius: 20rpx;
+  font-size: 20rpx;
+  font-weight: bold;
+}
+
+.player-club {
+  font-size: 22rpx;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 球员详情弹窗样式 */
+.player-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.player-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.player-modal {
+  background: white;
+  border-radius: 24rpx;
+  width: 85%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 40rpx;
+  position: relative;
+}
+
+.player-modal-close {
+  position: absolute;
+  right: 20rpx;
+  top: 20rpx;
+  font-size: 40rpx;
+  color: #999;
+  z-index: 10;
+  padding: 10rpx;
+}
+
+.player-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 30rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.player-modal-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.player-modal-avatar-img {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.player-modal-info {
+  flex: 1;
+}
+
+.player-modal-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.player-modal-club {
+  font-size: 26rpx;
+  color: #667eea;
+  background: #f0f3ff;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  display: inline-block;
+}
+
+.player-modal-body {
+  margin-top: 20rpx;
+}
+
+.player-modal-section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-left: 12rpx;
+  border-left: 6rpx solid #667eea;
+}
+
+.player-modal-loading,
+.player-modal-error {
+  text-align: center;
+  padding: 40rpx 0;
+  color: #999;
+  font-size: 26rpx;
+}
+
+.player-modal-match {
+  padding: 20rpx;
+  margin-bottom: 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.player-modal-match-date {
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 8rpx;
+}
+
+.player-modal-match-fixtures {
+  font-size: 26rpx;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.player-modal-match-score {
+  font-weight: bold;
+  color: #667eea;
+  margin: 0 8rpx;
+}
+
+.player-modal-match-stats {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 8rpx;
+}
+
+.player-modal-match-live {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+
+.live-btn {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.live-btn.migu {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.live-btn.cctv {
+  background: #e53;
+  color: white;
+}
+
+.player-modal-match-weather {
+  font-size: 22rpx;
+  color: #1976d2;
+  margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+/* 赛事类型标签 */
+.match-type-tag {
+  display: inline-block;
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  margin-right: 8rpx;
+}
+
+.ucl-tag {
+  background: #1a237e;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.uel-tag {
+  background: #263238;
+  color: #80cbc4;
+}
+
+.league-tag {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.cup-tag {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.wc-tag {
+  background: #000;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.nt-tag {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
+.quali-tag {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}

@@ -3,7 +3,6 @@
     "pages/group/group",
     "pages/knockout/knockout",
     "pages/standings/standings",
-    "pages/squad/squad",
     "pages/webview/webview"
   ],
   "window": {
@@ -36,6 +35,14 @@
       }
     ]
   },
+  "subPackages": [
+    {
+      "root": "packageSquad",
+      "pages": [
+        "pages/squad/squad"
+      ]
+    }
+  ],
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }
