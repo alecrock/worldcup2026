@@ -1,0 +1,159 @@
+<view class="container">
+  <view class="tab-container">
+    <view class="tab {{currentTab === 'group' ? 'active' : ''}}" bindtap="switchTab" data-tab="group">小组赛</view>
+    <view class="tab {{currentTab === 'knockout' ? 'active' : ''}}" bindtap="switchTab" data-tab="knockout">淘汰赛</view>
+    <view class="tab {{currentTab === 'standings' ? 'active' : ''}}" bindtap="switchTab" data-tab="standings">排行榜</view>
+    <view class="tab {{currentTab === 'squad' ? 'active' : ''}}" bindtap="switchTab" data-tab="squad">球队阵容</view>
+  </view>
+
+  <scroll-view scroll-y class="content">
+    <!-- 小组赛 -->
+    <view class="section" wx:if="{{currentTab === 'group'}}">
+      <view class="group-filter">
+        <view class="filter-btn {{currentGroup === 'all' ? 'active' : ''}}" bindtap="filterGroup" data-group="all">全部</view>
+        <view class="filter-btn {{currentGroup === item ? 'active' : ''}}" 
+              wx:for="{{groups}}" 
+              wx:key="*this"
+              bindtap="filterGroup" 
+              data-group="{{item}}">{{item}}</view>
+      </view>
+      
+      <view class="match-card" wx:for="{{filteredMatches}}" wx:key="index">
+        <view class="match-date">🕐 {{item.date}}</view>
+        <view class="match-group">{{item.group}}</view>
+        <view class="match-teams">
+          <view class="team">
+            <text class="flag">{{item.homeFlag}}</text>
+            <text class="team-name">{{item.home}}</text>
+          </view>
+          <view wx:if="{{item.score}}" class="match-score-container">
+            <text class="match-score">{{item.score}}</text>
+            <text class="match-finished">已结束</text>
+          </view>
+          <text wx:else class="vs">VS</text>
+          <view class="team">
+            <text class="flag">{{item.awayFlag}}</text>
+            <text class="team-name">{{item.away}}</text>
+          </view>
+        </view>
+        <view class="match-venue" wx:if="{{item.venue}}">📍 {{item.venue}}</view>
+      </view>
+    </view>
+
+    <!-- 淘汰赛 -->
+    <view class="section" wx:if="{{currentTab === 'knockout'}}">
+      <view class="knockout-tree">
+        <view class="round" wx:for="{{knockoutRounds}}" wx:key="round">
+          <view class="round-title {{item.isFinal ? 'final' : ''}}">{{item.round}}</view>
+          <view class="match-node {{match.isFinal ? 'final' : ''}}" wx:for="{{item.matches}}" wx:for-item="match" wx:key="code">
+            <view class="match-time">🕐 {{match.date}} <text class="match-code">{{match.code}}</text></view>
+            <view class="match-info">
+              <view class="team-name-knockout">{{match.home}}</view>
+              <view class="vs-text">VS</view>
+              <view class="team-name-knockout">{{match.away}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 球队阵容 -->
+    <view class="section" wx:if="{{currentTab === 'squad'}}">
+      <scroll-view scroll-x class="squad-country-filter">
+        <view class="country-btn {{currentCountry === item ? 'active' : ''}}" 
+              wx:for="{{countries}}" 
+              wx:key="*this"
+              bindtap="selectCountry"
+              data-country="{{item}}">
+          {{item.flag}} {{item.name}}
+        </view>
+      </scroll-view>
+      
+      <view class="squad-card" wx:if="{{currentSquad}}">
+        <view class="squad-header">
+          <text class="squad-flag">{{currentSquad.flag}}</text>
+          <text class="squad-country">{{currentCountry}}</text>
+          <text class="squad-group">{{currentSquad.group}}</text>
+        </view>
+        
+        <view class="position-section" wx:for="{{currentSquad.positions}}" wx:key="pos">
+          <view class="pos-title">{{item.icon}} {{item.pos}}</view>
+          <view class="players-grid">
+            <view class="player-item" wx:for="{{item.players}}" wx:for-item="player" wx:key="*this">
+              <text class="player-num">{{player.num}}</text>
+              <text class="player-name">{{player.name}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 排行榜 -->
+    <view class="section" wx:if="{{currentTab === 'standings'}}">
+      <!-- 子标签切换 -->
+      <view class="sub-tab-container">
+        <view class="sub-tab {{standingSubTab === 'standings' ? 'active' : ''}}" bindtap="switchStandingSubTab" data-tab="standings">积分榜</view>
+        <view class="sub-tab {{standingSubTab === 'scorers' ? 'active' : ''}}" bindtap="switchStandingSubTab" data-tab="scorers">射手榜</view>
+      </view>
+
+      <!-- 积分榜 -->
+      <view wx:if="{{standingSubTab === 'standings'}}">
+        <view class="standing-group-filter">
+          <view class="standing-group-btn {{standingGroupFilter === item ? 'active' : ''}}" 
+                wx:for="{{standingGroups}}" wx:key="*this"
+                bindtap="filterStandingGroup" data-group="{{item}}">
+            {{item}}
+          </view>
+        </view>
+        <view class="standing-group" wx:for="{{filteredStandings}}" wx:key="group">
+          <view class="standing-group-title">{{item.group}}</view>
+          <view class="standing-table">
+            <view class="standing-header">
+              <text class="standing-pos">排名</text>
+              <text class="standing-team-header">球队</text>
+              <text class="standing-p">场次</text>
+              <text class="standing-w">胜</text>
+              <text class="standing-d">平</text>
+              <text class="standing-l">负</text>
+              <text class="standing-gf">进球</text>
+              <text class="standing-ga">失球</text>
+              <text class="standing-gd">净胜</text>
+              <text class="standing-pts">积分</text>
+            </view>
+            <view class="standing-row {{index < 2 ? 'qualified' : ''}}" wx:for="{{item.teams}}" wx:for-item="team" wx:key="team">
+              <text class="standing-pos">{{index+1}}</text>
+              <text class="standing-team">{{team.team}}</text>
+              <text class="standing-p">{{team.played}}</text>
+              <text class="standing-w">{{team.won}}</text>
+              <text class="standing-d">{{team.drawn}}</text>
+              <text class="standing-l">{{team.lost}}</text>
+              <text class="standing-gf">{{team.goalsFor}}</text>
+              <text class="standing-ga">{{team.goalsAgainst}}</text>
+              <text class="standing-gd">{{team.gd}}</text>
+              <text class="standing-pts">{{team.points}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 射手榜 -->
+      <view wx:if="{{standingSubTab === 'scorers'}}">
+        <view class="scorer-table">
+          <view class="scorer-header">
+            <text class="scorer-rank">排名</text>
+            <text class="scorer-name-header">球员</text>
+            <text class="scorer-team-header">球队</text>
+            <text class="scorer-goals-header">进球</text>
+          </view>
+          <view class="scorer-row" wx:for="{{topScorersList}}" wx:key="rank">
+            <text class="scorer-rank">{{item.rank}}</text>
+            <text class="scorer-name">{{item.name}}</text>
+            <text class="scorer-team">{{item.team}}</text>
+            <text class="scorer-goals">{{item.goals}}</text>
+          </view>
+        </view>
+        <text class="scorer-note">* 数据更新至2026年6月20日</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,549 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f8f9fa;
+}
+
+.tab-container {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 2rpx solid #e9ecef;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tab {
+  flex: 1;
+  padding: 24rpx 16rpx;
+  text-align: center;
+  font-weight: bold;
+  color: #666;
+  border-bottom: 6rpx solid transparent;
+  font-size: 26rpx;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background: white;
+}
+
+.content {
+  flex: 1;
+  padding: 30rpx;
+  overflow-y: auto;
+}
+
+/* 小组赛筛选 */
+.group-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: white;
+  border-radius: 16rpx;
+}
+
+.filter-btn {
+  padding: 16rpx 24rpx;
+  border: 4rpx solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.filter-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+/* 比赛卡片 */
+.match-card {
+  background: white;
+  border: 4rpx solid #e9ecef;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+}
+
+.match-date {
+  font-size: 24rpx;
+  color: #667eea;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+
+.match-group {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  margin-bottom: 16rpx;
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20rpx 0;
+}
+
+.team {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.flag {
+  font-size: 40rpx;
+}
+
+.team-name {
+  font-weight: bold;
+  font-size: 30rpx;
+}
+
+.vs {
+  padding: 0 20rpx;
+  color: #999;
+  font-weight: bold;
+  font-size: 28rpx;
+}
+
+.match-venue {
+  font-size: 22rpx;
+  color: #888;
+  text-align: center;
+  margin-top: 16rpx;
+  padding: 8rpx 16rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+}
+
+/* 淘汰赛 */
+.knockout-tree {
+  padding: 20rpx 10rpx;
+}
+
+.round {
+  margin-bottom: 60rpx;
+}
+
+.round-title {
+  text-align: center;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 30rpx;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20rpx;
+}
+
+.round-title.final {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  font-size: 40rpx;
+}
+
+.match-node {
+  background: white;
+  border: 4rpx solid #e9ecef;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin: 20rpx 0;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.08);
+}
+
+.match-node.final {
+  border: 6rpx solid #f5576c;
+  background: #fff5f5;
+}
+
+.match-time {
+  font-size: 22rpx;
+  color: #667eea;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+  padding: 8rpx 16rpx;
+  background: #f0f3ff;
+  border-radius: 8rpx;
+  display: inline-block;
+}
+
+.match-code {
+  font-size: 20rpx;
+  color: #999;
+  margin-left: 16rpx;
+}
+
+.match-info {
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+.team-name-knockout {
+  font-weight: bold;
+  color: #333;
+  padding: 8rpx 0;
+}
+
+.vs-text {
+  text-align: center;
+  color: #999;
+  margin: 10rpx 0;
+  font-size: 24rpx;
+}
+
+/* 球队阵容 */
+.squad-country-filter {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: white;
+  border-radius: 16rpx;
+  white-space: nowrap;
+}
+
+.country-btn {
+  padding: 12rpx 20rpx;
+  border: 4rpx solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  display: inline-block;
+}
+
+.country-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+.squad-card {
+  background: white;
+  border: 4rpx solid #e9ecef;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+}
+
+.squad-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 4rpx solid #f0f0f0;
+}
+
+.squad-flag {
+  font-size: 64rpx;
+}
+
+.squad-country {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.squad-group {
+  font-size: 24rpx;
+  background: #667eea;
+  color: white;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  margin-left: auto;
+}
+
+.position-section {
+  margin: 20rpx 0;
+}
+
+.pos-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin: 20rpx 0 12rpx 0;
+  padding-left: 8rpx;
+  border-left: 6rpx solid #667eea;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8rpx;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 10rpx 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+}
+
+.player-num {
+  display: inline-block;
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  font-size: 20rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.player-name {
+  font-weight: 500;
+  color: #333;
+}
+
+/* 排行榜子标签 */
+.sub-tab-container {
+  display: flex;
+  background: #f0f3ff;
+  border-radius: 16rpx;
+  margin-bottom: 30rpx;
+  overflow: hidden;
+}
+
+.sub-tab {
+  flex: 1;
+  padding: 24rpx;
+  text-align: center;
+  font-weight: bold;
+  color: #666;
+  font-size: 28rpx;
+  transition: all 0.3s;
+}
+
+.sub-tab.active {
+  background: #667eea;
+  color: white;
+}
+
+/* 积分榜小组筛选 */
+.standing-group-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: white;
+  border-radius: 16rpx;
+}
+
+.standing-group-btn {
+  padding: 12rpx 20rpx;
+  border: 3rpx solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.standing-group-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+/* 积分榜表格 */
+.standing-group {
+  margin-bottom: 40rpx;
+}
+
+.standing-group-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 20rpx;
+  padding: 16rpx 24rpx;
+  background: #f0f3ff;
+  border-radius: 12rpx;
+}
+
+.standing-table {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+}
+
+.standing-header {
+  display: flex;
+  background: #667eea;
+  color: white;
+  font-size: 22rpx;
+  font-weight: bold;
+  padding: 16rpx 8rpx;
+}
+
+.standing-header text {
+  flex: 1;
+  text-align: center;
+}
+
+.standing-row {
+  display: flex;
+  padding: 16rpx 8rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+  font-size: 24rpx;
+  align-items: center;
+}
+
+.standing-row.qualified {
+  background: #e8f5e9;
+}
+
+.standing-pos {
+  width: 50rpx;
+  text-align: center;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.standing-team {
+  flex: 2;
+  text-align: left;
+  font-weight: 500;
+  padding-left: 8rpx;
+}
+
+.standing-p, .standing-w, .standing-d, .standing-l, .standing-gf, .standing-ga, .standing-gd, .standing-pts {
+  flex: 1;
+  text-align: center;
+}
+
+.standing-pts {
+  font-weight: bold;
+  color: #667eea;
+}
+
+/* 射手榜表格 */
+.scorer-table {
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+  margin-bottom: 20rpx;
+}
+
+.scorer-header {
+  display: flex;
+  background: #764ba2;
+  color: white;
+  font-size: 26rpx;
+  font-weight: bold;
+  padding: 20rpx 16rpx;
+}
+
+.scorer-header text {
+  text-align: center;
+}
+
+.scorer-rank {
+  width: 80rpx;
+  text-align: center;
+}
+
+.scorer-name-header {
+  flex: 2;
+  text-align: left;
+  padding-left: 16rpx;
+}
+
+.scorer-team-header {
+  flex: 1.5;
+  text-align: center;
+}
+
+.scorer-goals-header {
+  width: 100rpx;
+  text-align: center;
+}
+
+.scorer-row {
+  display: flex;
+  padding: 20rpx 16rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+  font-size: 26rpx;
+  align-items: center;
+}
+
+.scorer-row:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.scorer-rank {
+  width: 80rpx;
+  text-align: center;
+  font-weight: bold;
+  color: #764ba2;
+}
+
+.scorer-name {
+  flex: 2;
+  text-align: left;
+  font-weight: 500;
+  padding-left: 16rpx;
+}
+
+.scorer-team {
+  flex: 1.5;
+  text-align: center;
+  color: #666;
+}
+
+.scorer-goals {
+  width: 100rpx;
+  text-align: center;
+  font-weight: bold;
+  color: #764ba2;
+  font-size: 30rpx;
+}
+
+.scorer-note {
+  display: block;
+  text-align: center;
+  color: #999;
+  font-size: 22rpx;
+  margin-top: 20rpx;
+}
+
+/* 比赛比分显示 */
+.match-score {
+  padding: 8rpx 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 28rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  min-width: 80rpx;
+}
+
+.match-finished {
+  font-size: 20rpx;
+  color: #999;
+  text-align: center;
+  margin-top: 4rpx;
+}

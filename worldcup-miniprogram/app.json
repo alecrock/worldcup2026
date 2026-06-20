@@ -1,0 +1,15 @@
+{
+  "version": "1.2.0",
+  "pages": [
+    "pages/index/index",
+    "pages/content/content"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#667eea",
+    "navigationBarTitleText": "2026世界杯",
+    "navigationBarTextStyle": "white"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

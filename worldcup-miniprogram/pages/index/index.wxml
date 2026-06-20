@@ -1,0 +1,48 @@
+<view class="container">
+  <view class="hero-section">
+    <text class="title">🏆 2026世界杯</text>
+    <text class="subtitle">赛程速查 · 竖版完整版</text>
+  </view>
+  
+  <view class="like-section">
+    <view class="like-btn {{liked ? 'liked' : ''}}" bindtap="onLike">
+      <text class="like-icon">{{liked ? '❤️' : '🤍'}}</text>
+      <text class="like-text">{{liked ? '已点赞' : '点赞查看'}}</text>
+    </view>
+    <text class="like-hint">点击下方按钮点赞后查看完整赛程</text>
+  </view>
+
+  <view class="features" wx:if="{{liked}}">
+    <view class="feature-item" bindtap="goToContent" data-tab="group">
+      <text class="feature-icon">⚽</text>
+      <text class="feature-name">小组赛</text>
+    </view>
+    <view class="feature-item" bindtap="goToContent" data-tab="knockout">
+      <text class="feature-icon">🏆</text>
+      <text class="feature-name">淘汰赛</text>
+    </view>
+    <view class="feature-item" bindtap="goToContent" data-tab="squad">
+      <text class="feature-icon">👥</text>
+      <text class="feature-name">球队阵容</text>
+    </view>
+    <view class="feature-item" bindtap="goToContent" data-tab="standings">
+      <text class="feature-icon">📊</text>
+      <text class="feature-name">排行榜</text>
+    </view>
+  </view>
+
+  <view class="stats" wx:if="{{liked}}">
+    <view class="stat-item">
+      <text class="stat-num">48</text>
+      <text class="stat-label">参赛球队</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-num">104</text>
+      <text class="stat-label">总比赛数</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-num">12</text>
+      <text class="stat-label">比赛场馆</text>
+    </view>
+  </view>
+</view>
