@@ -1130,27 +1130,41 @@
 
         // 小红书：优先唤起APP，失败后跳转手机网页
         function openXiaohongshuMatch(home, away) {
-            const keyword = encodeURIComponent(`${home} vs ${away} 2026世界杯`);
-            // 尝试iOS/Android深度链接
-            const appUrl = `xhsdiscover://search_result?keyword=${keyword}`;
-            const webUrl = `https://www.xiaohongshu.com/search_result?keyword=${keyword}`;
+            const keyword = `${home} vs ${away} 2026世界杯`;
+            const encodedKeyword = encodeURIComponent(keyword);
+            
+            // 小红书APP深度链接（iOS/Android）
+            const appUrl1 = `xiaohongshu://discovery/item/${encodedKeyword}`;
+            const appUrl2 = `xhsdiscover://search?q=${encodedKeyword}`;
+            
+            // 小红书网页版搜索（正确的URL格式）
+            const webUrl = `https://www.xiaohongshu.com/search_result?keyword=${encodedKeyword}`;
             
             if (!isMobile()) {
-                window.open(webUrl, '_blank');
+                // PC端：直接打开网页版
+                window.open(`https://www.xiaohongshu.com/explore/search?q=${encodedKeyword}`, '_blank');
                 return;
             }
             
             // 移动端：先尝试唤起APP
+            let appOpened = false;
+            
+            // 尝试第一种URL Scheme
+            window.location.href = appUrl2;
+            
             const timer = setTimeout(() => {
-                // 超过600ms没响应，说明APP未安装，跳转手机网页
-                window.location.href = webUrl;
-            }, 600);
+                if (!appOpened) {
+                    // APP未安装，跳转网页版
+                    window.location.href = webUrl;
+                }
+            }, 800);
             
-            window.location.href = appUrl;
-            
-            // 用户手动返回页面时，取消跳转
+            // 监听页面可见性，如果切走说明APP已唤起
             window.addEventListener('visibilitychange', function handler() {
-                if (document.visibilityState === 'visible') {
+                if (document.visibilityState === 'hidden') {
+                    appOpened = true;
+                } else if (document.visibilityState === 'visible' && !appOpened) {
+                    // 用户返回但APP未唤起，取消定时器
                     clearTimeout(timer);
                     window.removeEventListener('visibilitychange', handler);
                 }

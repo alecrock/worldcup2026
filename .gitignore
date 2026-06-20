@@ -1,0 +1,36 @@
+# Python缓存
+__pycache__/
+*.pyc
+
+# 临时文件
+_tmp_backup/
+*.b64.txt
+*.txt.bak
+
+# 部署目录
+_deploy/
+
+# 备份文件
+*_backup*.html
+*_backup_*.html
+
+# 临时脚本（不应提交到git）
+*.py
+*.js
+!generate_matches.py
+!deploy_github.py
+
+# 图片临时文件
+*.png
+*.jpg
+*.jpeg
+
+# Excel文件
+*.xlsx
+
+# worldcup-miniprogram目录（旧的，已废弃）
+worldcup-miniprogram/
+
+# 工作区文件
+.vscode/
+.idea/
