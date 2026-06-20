@@ -1128,6 +1128,35 @@
             });
         }
 
+        // 小红书：优先唤起APP，失败后跳转手机网页
+        function openXiaohongshuMatch(home, away) {
+            const keyword = encodeURIComponent(`${home} vs ${away} 2026世界杯`);
+            // 尝试iOS/Android深度链接
+            const appUrl = `xhsdiscover://search_result?keyword=${keyword}`;
+            const webUrl = `https://www.xiaohongshu.com/search_result?keyword=${keyword}`;
+            
+            if (!isMobile()) {
+                window.open(webUrl, '_blank');
+                return;
+            }
+            
+            // 移动端：先尝试唤起APP
+            const timer = setTimeout(() => {
+                // 超过600ms没响应，说明APP未安装，跳转手机网页
+                window.location.href = webUrl;
+            }, 600);
+            
+            window.location.href = appUrl;
+            
+            // 用户手动返回页面时，取消跳转
+            window.addEventListener('visibilitychange', function handler() {
+                if (document.visibilityState === 'visible') {
+                    clearTimeout(timer);
+                    window.removeEventListener('visibilitychange', handler);
+                }
+            });
+        }
+
         // 生成地图链接：PC端百度，微信/手机直接调起腾讯地图App
         function getBaiduMapUrl(venueName) {
             const found = getVenueCoord(venueName);
@@ -1183,6 +1212,11 @@
                     href = isMobile()
                         ? `javascript:void(openCCTVMatch('${home}','${away}'))`
                         : p.url;
+                } else if (p.id === 'xiaohongshu') {
+                    // 小红书：移动端优先唤起APP，失败后跳转手机网页；PC端直接打开网页
+                    href = isMobile()
+                        ? `javascript:void(openXiaohongshuMatch('${home}','${away}'))`
+                        : p.searchUrl + matchKeyword;
                 } else if (p.searchUrl) {
                     href = p.searchUrl + matchKeyword;
                 }
@@ -1365,7 +1399,7 @@
             {date:"6月18日 上午9:00", group:"A组", home:"墨西哥", away:"韩国", score:"1-0", venue:"瓜达拉哈拉 Estadio Akron"},
             {date:"6月18日 晚上20:00", group:"A组", home:"捷克", away:"南非", score:"1-1", venue:"亚特兰大 Mercedes-Benz Stadium"},
             {date:"6月13日 凌晨3:00", group:"B组", home:"加拿大", away:"波黑", score:"1-1", venue:"多伦多 BMO Field"},
-            {date:"6月14日 凌晨3:00", group:"B组", home:"卡塔尔", away:"瑞士", score:"1-1", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月14日 凌晨3:00", group:"B组", home:"卡塔尔", away:"瑞士", score:"0-2", venue:"圣克拉拉 Levi's Stadium"},
             {date:"6月19日 上午10:00", group:"B组", home:"加拿大", away:"卡塔尔", score:"6-0", venue:"温哥华 BC Place"},
             {date:"6月19日 凌晨3:00", group:"B组", home:"瑞士", away:"波黑", score:"4-1", venue:"洛杉矶 SoFi Stadium"},
             {date:"6月14日 上午6:00", group:"C组", home:"巴西", away:"摩洛哥", score:"1-1", venue:"纽约 MetLife Stadium"},
@@ -1373,7 +1407,7 @@
             {date:"6月20日 上午6:00", group:"C组", home:"巴西", away:"海地", score:"3-0", venue:"费城 Lincoln Financial Field"},
             {date:"6月20日 凌晨3:00", group:"C组", home:"苏格兰", away:"摩洛哥", score:"0-1", venue:"马萨诸塞 Gillette Stadium"},
             {date:"6月13日 上午9:00", group:"D组", home:"美国", away:"巴拉圭", score:"4-1", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月14日 中午12:00", group:"D组", home:"澳大利亚", away:"土耳其", score:"2-0", venue:"温哥华 BC Place"},
+            {date:"6月14日 中午12:00", group:"D组", home:"澳大利亚", away:"土耳其", score:"1-2", venue:"温哥华 BC Place"},
             {date:"6月19日 凌晨0:00", group:"D组", home:"美国", away:"澳大利亚", score:"2-0", venue:"西雅图 Lumen Field"},
             {date:"6月19日 中午12:00", group:"D组", home:"土耳其", away:"巴拉圭", score:"0-1", venue:"圣克拉拉 Levi's Stadium"},
             {date:"6月15日 凌晨1:00", group:"E组", home:"德国", away:"库拉索", score:"7-1", venue:"休斯敦 NRG Stadium"},
@@ -1382,8 +1416,8 @@
             {date:"6月21日 上午8:00", group:"E组", home:"厄瓜多尔", away:"库拉索", venue:"堪萨斯城 Arrowhead Stadium"},
             {date:"6月26日 凌晨4:00", group:"E组", home:"厄瓜多尔", away:"德国", venue:"纽约 MetLife Stadium"},
             {date:"6月26日 上午10:00", group:"E组", home:"库拉索", away:"科特迪瓦", venue:"休斯敦 NRG Stadium"},
-            {date:"6月14日 凌晨1:00", group:"F组", home:"瑞典", away:"突尼斯", score:"5-1", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月14日 凌晨4:00", group:"F组", home:"荷兰", away:"日本", score:"2-2", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月14日 凌晨1:00", group:"F组", home:"瑞典", away:"突尼斯", score:"2-0", venue:"蒙特雷 Estadio BBVA"},
+            {date:"6月14日 凌晨4:00", group:"F组", home:"荷兰", away:"日本", score:"2-1", venue:"达拉斯 AT&T Stadium"},
             {date:"6月21日 凌晨1:00", group:"F组", home:"荷兰", away:"瑞典", venue:"休斯敦 NRG Stadium"},
             {date:"6月21日 中午12:00", group:"F组", home:"突尼斯", away:"日本", venue:"蒙特雷 Estadio BBVA"},
             {date:"6月26日 上午7:00", group:"F组", home:"突尼斯", away:"荷兰", venue:"堪萨斯城 Arrowhead Stadium"},
