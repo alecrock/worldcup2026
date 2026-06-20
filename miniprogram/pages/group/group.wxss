@@ -1,0 +1,241 @@
+/* pages/group/group.wxss */
+.group-filter {
+  display: flex;
+  background: #f8f9fa;
+  padding: 20rpx;
+  gap: 16rpx;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.group-btn {
+  padding: 16rpx 24rpx;
+  border: 2px solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.group-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+.match-list {
+  padding: 20rpx;
+  height: calc(100vh - 320rpx);
+}
+
+.match-card {
+  background: white;
+  border: 2rpx solid #e9ecef;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.match-date {
+  font-size: 24rpx;
+  color: #667eea;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+
+.match-group-tag {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  margin-bottom: 16rpx;
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16rpx 0;
+}
+
+.team {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  font-size: 30rpx;
+}
+
+.vs {
+  padding: 0 20rpx;
+  color: #999;
+  font-weight: bold;
+  font-size: 28rpx;
+}
+
+.match-venue {
+  text-align: center;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.match-venue.link {
+  color: #667eea;
+  text-decoration: underline;
+}
+
+.live-btn {
+  margin-top: 16rpx;
+  text-align: center;
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  color: white;
+  font-size: 24rpx;
+  font-weight: bold;
+  padding: 12rpx 0;
+  border-radius: 30rpx;
+}
+
+/* ===== 直播弹窗 ===== */
+.live-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.live-modal {
+  width: 640rpx;
+  background: white;
+  border-radius: 32rpx;
+  padding: 40rpx 32rpx 32rpx;
+  text-align: center;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.live-modal-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.live-modal-desc {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.live-modal-tip {
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 24rpx;
+}
+
+.live-platforms {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.live-platform-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  color: white;
+}
+
+.platform-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.platform-info {
+  flex: 1;
+  text-align: left;
+}
+
+.platform-name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.platform-desc {
+  display: block;
+  font-size: 20rpx;
+  opacity: 0.85;
+  margin-top: 4rpx;
+}
+
+.platform-arrow {
+  font-size: 40rpx;
+  font-weight: bold;
+  opacity: 0.8;
+  margin-left: 12rpx;
+}
+
+.live-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1rpx solid #eee;
+  padding-top: 20rpx;
+}
+
+.copy-all-btn {
+  font-size: 24rpx;
+  color: #667eea;
+  padding: 8rpx 0;
+}
+
+.close-btn {
+  font-size: 26rpx;
+  color: #999;
+  padding: 8rpx 0;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 比分显示 */
+.match-score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 100rpx;
+}
+
+.match-score {
+  padding: 8rpx 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 28rpx;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.match-finished {
+  font-size: 20rpx;
+  color: #999;
+  margin-top: 4rpx;
+}

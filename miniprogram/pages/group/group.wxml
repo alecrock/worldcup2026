@@ -1,0 +1,80 @@
+<!--pages/group/group.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="header-title">🏆 2026世界杯</view>
+    <view class="header-sub">小组赛赛程</view>
+  </view>
+
+  <!-- 小组筛选按钮 -->
+  <scroll-view class="group-filter" scroll-x>
+    <view
+      wx:for="{{groups}}"
+      wx:key="*this"
+      class="group-btn {{activeGroup === item ? 'active' : ''}}"
+      bindtap="onGroupTap"
+      data-group="{{item}}"
+    >{{item}}</view>
+  </scroll-view>
+
+  <!-- 比赛卡片列表 -->
+  <scroll-view class="match-list" scroll-y>
+    <view wx:if="{{filteredMatches.length === 0}}" class="empty-tip">请选择小组查看赛程</view>
+    <view wx:for="{{filteredMatches}}" wx:key="index" class="match-card">
+      <view class="match-date">{{item.date}}</view>
+      <view class="match-group-tag">{{item.group}}</view>
+      <view class="match-teams">
+        <view class="team">{{item.home}}</view>
+        <view wx:if="{{item.score}}" class="match-score-container">
+          <text class="match-score">{{item.score}}</text>
+          <text class="match-finished">已结束</text>
+        </view>
+        <view wx:else class="vs">VS</view>
+        <view class="team">{{item.away}}</view>
+      </view>
+      <view
+        class="match-venue {{item.hasCoord ? 'link' : ''}}"
+        bindtap="onVenueTap"
+        data-lat="{{item.venueLat}}"
+        data-lng="{{item.venueLng}}"
+        data-name="{{item.venue}}"
+      >📍 {{item.venue}}</view>
+      <view
+        class="live-btn"
+        catchtap="onLiveTap"
+        data-home="{{item.home}}"
+        data-away="{{item.away}}"
+        data-date="{{item.date}}"
+      >📺 看直播</view>
+    </view>
+  </scroll-view>
+
+  <!-- 直播平台弹窗 -->
+  <view wx:if="{{showLiveModal}}" class="live-mask" bindtap="closeLiveModal">
+    <view class="live-modal" catchtap="">
+      <view class="live-modal-title">📺 观看直播</view>
+      <view class="live-modal-desc">{{liveMatchInfo}}</view>
+      <view class="live-modal-tip">点击平台直接跳转APP👇</view>
+      <view class="live-platforms">
+        <view
+          wx:for="{{streamingPlatforms}}"
+          wx:key="id"
+          class="live-platform-item"
+          style="background:{{item.color}};"
+          bindtap="onPlatformTap"
+          data-platform="{{item}}"
+        >
+          <text class="platform-icon">{{item.icon}}</text>
+          <view class="platform-info">
+            <text class="platform-name">{{item.shortName}}</text>
+            <text class="platform-desc">{{item.desc}}</text>
+          </view>
+          <text class="platform-arrow">›</text>
+        </view>
+      </view>
+      <view class="live-modal-footer">
+        <text class="copy-all-btn" bindtap="onCopyAll">📋 复制比赛信息</text>
+        <text class="close-btn" bindtap="closeLiveModal">关闭</text>
+      </view>
+    </view>
+  </view>
+</view>

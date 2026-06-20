@@ -1,0 +1,308 @@
+/* pages/knockout/knockout.wxss */
+
+/* 视图切换按钮 */
+.view-switch {
+  display: flex;
+  background: #f8f9fa;
+  padding: 16rpx 20rpx;
+  gap: 16rpx;
+}
+
+.switch-btn {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border: 2px solid #667eea;
+  color: #667eea;
+  font-size: 26rpx;
+  font-weight: bold;
+  border-radius: 12rpx;
+  background: white;
+}
+
+.switch-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+/* ===== 赛程列表 ===== */
+.ko-list {
+  padding: 20rpx;
+  height: calc(100vh - 280rpx);
+}
+
+.round-section {
+  margin-bottom: 40rpx;
+}
+
+.round-title {
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 24rpx;
+  padding: 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(102,126,234,0.3);
+}
+
+.round-title.final {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  font-size: 36rpx;
+}
+
+.match-card {
+  background: white;
+  border: 2rpx solid #e9ecef;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.08);
+}
+
+.match-card.final-card {
+  border: 4rpx solid #f5576c;
+  background: #fff5f5;
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.match-time {
+  font-size: 24rpx;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.match-code {
+  font-size: 20rpx;
+  color: #999;
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16rpx 0;
+}
+
+.team {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  font-size: 28rpx;
+}
+
+.vs {
+  padding: 0 20rpx;
+  color: #999;
+  font-weight: bold;
+  font-size: 26rpx;
+}
+
+.match-venue {
+  text-align: center;
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #666;
+}
+
+.match-venue.link {
+  color: #667eea;
+  text-decoration: underline;
+}
+
+.live-btn {
+  margin-top: 16rpx;
+  text-align: center;
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  color: white;
+  font-size: 24rpx;
+  font-weight: bold;
+  padding: 12rpx 0;
+  border-radius: 30rpx;
+}
+
+/* ===== 晋级路线图 ===== */
+.bracket-scroll {
+  width: 100%;
+  height: calc(100vh - 280rpx);
+}
+
+.bracket-container {
+  display: flex;
+  flex-direction: row;
+  padding: 20rpx;
+  min-width: 1200rpx;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 200rpx;
+  padding: 0 8rpx;
+}
+
+.bracket-round-title {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 20rpx;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bracket-matches {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  width: 100%;
+}
+
+.bracket-match {
+  background: white;
+  border: 2rpx solid #667eea;
+  border-radius: 12rpx;
+  padding: 12rpx 10rpx;
+  margin: 8rpx 0;
+  text-align: center;
+  min-height: 100rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bracket-team {
+  font-size: 18rpx;
+  color: #333;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bracket-vs {
+  font-size: 16rpx;
+  color: #999;
+  margin: 4rpx 0;
+}
+
+.bracket-code {
+  font-size: 16rpx;
+  color: #667eea;
+  margin-top: 4rpx;
+}
+
+/* ===== 直播弹窗 ===== */
+.live-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.live-modal {
+  width: 640rpx;
+  background: white;
+  border-radius: 32rpx;
+  padding: 40rpx 32rpx 32rpx;
+  text-align: center;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.live-modal-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.live-modal-desc {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.live-modal-tip {
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 24rpx;
+}
+
+.live-platforms {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.live-platform-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  color: white;
+}
+
+.platform-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.platform-info {
+  flex: 1;
+  text-align: left;
+}
+
+.platform-name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.platform-desc {
+  display: block;
+  font-size: 20rpx;
+  opacity: 0.85;
+  margin-top: 4rpx;
+}
+
+.platform-arrow {
+  font-size: 40rpx;
+  font-weight: bold;
+  opacity: 0.8;
+  margin-left: 12rpx;
+}
+
+.live-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1rpx solid #eee;
+  padding-top: 20rpx;
+}
+
+.copy-all-btn {
+  font-size: 24rpx;
+  color: #667eea;
+  padding: 8rpx 0;
+}
+
+.close-btn {
+  font-size: 26rpx;
+  color: #999;
+  padding: 8rpx 0;
+}

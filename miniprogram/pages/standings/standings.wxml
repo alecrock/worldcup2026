@@ -1,0 +1,77 @@
+<!--pages/standings/standings.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="header-title">📊 2026世界杯</view>
+    <view class="header-sub">排行榜</view>
+  </view>
+
+  <!-- 子标签切换 -->
+  <view class="sub-tab-container">
+    <view class="sub-tab {{subTab === 'standings' ? 'active' : ''}}" bindtap="switchSubTab" data-tab="standings">积分榜</view>
+    <view class="sub-tab {{subTab === 'scorers' ? 'active' : ''}}" bindtap="switchSubTab" data-tab="scorers">射手榜</view>
+  </view>
+
+  <!-- 积分榜 -->
+  <view wx:if="{{subTab === 'standings'}}">
+    <scroll-view class="group-filter" scroll-x>
+      <view
+        wx:for="{{groups}}"
+        wx:key="*this"
+        class="group-btn {{groupFilter === item ? 'active' : ''}}"
+        bindtap="filterGroup"
+        data-group="{{item}}"
+      >{{item}}</view>
+    </scroll-view>
+
+    <view class="standings-list">
+      <view wx:for="{{standingsList}}" wx:key="group" class="standing-group">
+        <view class="standing-group-title">{{item.group}}</view>
+        <view class="standing-table">
+          <view class="standing-header">
+            <text class="standing-pos">排名</text>
+            <text class="standing-team-header">球队</text>
+            <text class="standing-p">场次</text>
+            <text class="standing-w">胜</text>
+            <text class="standing-d">平</text>
+            <text class="standing-l">负</text>
+            <text class="standing-gf">进球</text>
+            <text class="standing-ga">失球</text>
+            <text class="standing-gd">净胜</text>
+            <text class="standing-pts">积分</text>
+          </view>
+          <view class="standing-row {{index < 2 ? 'qualified' : ''}}" wx:for="{{item.teams}}" wx:for-item="team" wx:key="team">
+            <text class="standing-pos">{{index+1}}</text>
+            <text class="standing-team">{{team.team}}</text>
+            <text class="standing-p">{{team.played}}</text>
+            <text class="standing-w">{{team.won}}</text>
+            <text class="standing-d">{{team.drawn}}</text>
+            <text class="standing-l">{{team.lost}}</text>
+            <text class="standing-gf">{{team.goalsFor}}</text>
+            <text class="standing-ga">{{team.goalsAgainst}}</text>
+            <text class="standing-gd">{{team.gd}}</text>
+            <text class="standing-pts">{{team.points}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 射手榜 -->
+  <view wx:if="{{subTab === 'scorers'}}" class="scorer-container">
+    <view class="scorer-table">
+      <view class="scorer-header">
+        <text class="scorer-rank">排名</text>
+        <text class="scorer-name-header">球员</text>
+        <text class="scorer-team-header">球队</text>
+        <text class="scorer-goals-header">进球</text>
+      </view>
+      <view class="scorer-row" wx:for="{{topScorersList}}" wx:key="rank">
+        <text class="scorer-rank">{{item.rank}}</text>
+        <text class="scorer-name">{{item.name}}</text>
+        <text class="scorer-team">{{item.team}}</text>
+        <text class="scorer-goals">{{item.goals}}</text>
+      </view>
+    </view>
+    <text class="scorer-note">* 数据更新至2026年6月20日</text>
+  </view>
+</view>

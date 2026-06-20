@@ -1,0 +1,101 @@
+<!--pages/knockout/knockout.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="header-title">🏆 2026世界杯</view>
+    <view class="header-sub">淘汰赛赛程</view>
+  </view>
+
+  <!-- 切换按钮：赛程列表 / 晋级路线 -->
+  <view class="view-switch">
+    <view class="switch-btn {{!showBracket ? 'active' : ''}}" bindtap="toggleBracket">📋 赛程列表</view>
+    <view class="switch-btn {{showBracket ? 'active' : ''}}" bindtap="toggleBracket">🗺️ 晋级路线</view>
+  </view>
+
+  <!-- ===== 赛程列表视图 ===== -->
+  <scroll-view wx:if="{{!showBracket}}" class="ko-list" scroll-y>
+    <block wx:for="{{knockoutMatches}}" wx:key="round">
+      <view class="round-section">
+        <view class="round-title {{item.round.indexOf('冠军') >= 0 ? 'final' : ''}}">
+          {{item.round}}
+        </view>
+        <view wx:for="{{item.matches}}" wx:for-item="match" wx:key="code" class="match-card {{match.isFinal ? 'final-card' : ''}}">
+          <view class="match-header">
+            <view class="match-time">{{match.date}}</view>
+            <view class="match-code">{{match.code}}</view>
+          </view>
+          <view class="match-teams">
+            <view class="team">{{match.home}}</view>
+            <view class="vs">VS</view>
+            <view class="team">{{match.away}}</view>
+          </view>
+          <view
+            class="match-venue {{match.hasCoord ? 'link' : ''}}"
+            bindtap="onVenueTap"
+            data-lat="{{match.venueLat}}"
+            data-lng="{{match.venueLng}}"
+            data-name="{{match.venue}}"
+          >📍 {{match.venue}}</view>
+          <view
+            class="live-btn"
+            catchtap="onLiveTap"
+            data-home="{{match.home}}"
+            data-away="{{match.away}}"
+            data-date="{{match.date}}"
+          >📺 看直播</view>
+        </view>
+      </view>
+    </block>
+  </scroll-view>
+
+  <!-- ===== 晋级路线图视图 ===== -->
+  <scroll-view wx:if="{{showBracket}}" class="bracket-scroll" scroll-x scroll-y>
+    <view class="bracket-container">
+      <view class="bracket-round" wx:for="{{bracketData.rounds}}" wx:key="title">
+        <view class="bracket-round-title">{{item.short}}</view>
+        <view class="bracket-matches">
+          <view
+            wx:for="{{item.matches}}"
+            wx:for-item="m"
+            wx:key="code"
+            class="bracket-match {{index % 2 === 0 ? 'top' : 'bottom'}}"
+          >
+            <view class="bracket-team">{{m.home}}</view>
+            <view class="bracket-vs">VS</view>
+            <view class="bracket-team">{{m.away}}</view>
+            <view class="bracket-code">{{m.code}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 直播平台弹窗 -->
+  <view wx:if="{{showLiveModal}}" class="live-mask" bindtap="closeLiveModal">
+    <view class="live-modal" catchtap="">
+      <view class="live-modal-title">📺 观看直播</view>
+      <view class="live-modal-desc">{{liveMatchInfo}}</view>
+      <view class="live-modal-tip">点击平台直接跳转APP👇</view>
+      <view class="live-platforms">
+        <view
+          wx:for="{{streamingPlatforms}}"
+          wx:key="id"
+          class="live-platform-item"
+          style="background:{{item.color}};"
+          bindtap="onPlatformTap"
+          data-platform="{{item}}"
+        >
+          <text class="platform-icon">{{item.icon}}</text>
+          <view class="platform-info">
+            <text class="platform-name">{{item.shortName}}</text>
+            <text class="platform-desc">{{item.desc}}</text>
+          </view>
+          <text class="platform-arrow">›</text>
+        </view>
+      </view>
+      <view class="live-modal-footer">
+        <text class="copy-all-btn" bindtap="onCopyAll">📋 复制比赛信息</text>
+        <text class="close-btn" bindtap="closeLiveModal">关闭</text>
+      </view>
+    </view>
+  </view>
+</view>

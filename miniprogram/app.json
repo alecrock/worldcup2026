@@ -1,0 +1,41 @@
+{
+  "pages": [
+    "pages/group/group",
+    "pages/knockout/knockout",
+    "pages/standings/standings",
+    "pages/squad/squad",
+    "pages/webview/webview"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#667eea",
+    "navigationBarTitleText": "2026世界杯",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#1e3c72"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#667eea",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/group/group",
+        "text": "小组赛"
+      },
+      {
+        "pagePath": "pages/knockout/knockout",
+        "text": "淘汰赛"
+      },
+      {
+        "pagePath": "pages/standings/standings",
+        "text": "排行榜"
+      },
+      {
+        "pagePath": "pages/squad/squad",
+        "text": "球队阵容"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
