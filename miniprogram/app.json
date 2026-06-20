@@ -30,7 +30,7 @@
         "text": "排行榜"
       },
       {
-        "pagePath": "pages/squad/squad",
+        "pagePath": "packageSquad/pages/squad/squad",
         "text": "球队阵容"
       }
     ]
