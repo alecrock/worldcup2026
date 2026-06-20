@@ -51,6 +51,7 @@ function calculateStandings() {
 const topScorers = [
   { name:'利昂内尔·梅西', team:'阿根廷', goals:3 },
   { name:'乔纳森·大卫', team:'加拿大', goals:3 },
+  { name:'马特乌斯·库尼亚', team:'巴西', goals:2 },
   { name:'基利安·姆巴佩', team:'法国', goals:2 },
   { name:'埃尔林·哈兰德', team:'挪威', goals:2 },
   { name:'凯·哈弗茨', team:'德国', goals:2 },
@@ -58,7 +59,7 @@ const topScorers = [
   { name:'法雷斯·巴洛贡', team:'美国', goals:2 },
   { name:'雅辛·阿亚里', team:'瑞典', goals:2 },
   { name:'克里斯·贾斯特', team:'新西兰', goals:2 },
-  { name:'维尼修斯·儒尼奥尔', team:'巴西', goals:1 }
+  { name:'维尼修斯·儒尼奥尔', team:'巴西', goals:2 }
 ];
 
 Page({
