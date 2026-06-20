@@ -239,3 +239,24 @@
   color: #999;
   margin-top: 4rpx;
 }
+
+/* 球队阵容入口 */
+.squad-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  margin: 16rpx 20rpx;
+  padding: 18rpx 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 12rpx;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.squad-entry-icon {
+  font-size: 32rpx;
+}
+.squad-entry:active {
+  opacity: 0.85;
+}

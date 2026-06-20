@@ -28,10 +28,6 @@
       {
         "pagePath": "pages/standings/standings",
         "text": "排行榜"
-      },
-      {
-        "pagePath": "packageSquad/pages/squad/squad",
-        "text": "球队阵容"
       }
     ]
   },

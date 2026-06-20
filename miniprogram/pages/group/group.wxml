@@ -16,6 +16,12 @@
     >{{item}}</view>
   </scroll-view>
 
+  <!-- 球队阵容入口 -->
+  <view class="squad-entry" bindtap="goToSquad">
+    <text class="squad-entry-icon">⚽</text>
+    <text>查看球队阵容</text>
+  </view>
+
   <!-- 比赛卡片列表 -->
   <scroll-view class="match-list" scroll-y>
     <view wx:if="{{filteredMatches.length === 0}}" class="empty-tip">请选择小组查看赛程</view>

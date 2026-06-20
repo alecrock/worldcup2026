@@ -166,4 +166,12 @@ Page({
     });
     this.setData({ showLiveModal: false });
   }
+
+  // 跳转到球队阵容（分包页面）
+  goToSquad() {
+    wx.navigateTo({
+      url: '/packageSquad/pages/squad/squad'
+    });
+  },
+
 });
