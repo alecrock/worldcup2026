@@ -1,5 +1,5 @@
 // pages/squad/squad.js
-const { teamSquads } = require('../../data/teamSquads.js');
+const { teamSquads } = require('../../../data/teamSquads.js');
 // const { playerMatches } = require('../../packageSquad/data/playerMatches.js');  // 临时移除，减小包体积
 
 Page({
