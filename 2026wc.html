@@ -157,6 +157,10 @@
             background: linear-gradient(135deg, #c62828 0%, #e53e3e 100%);
             color: white;
         }
+        .live-stream-link.xiaohongshu {
+            background: linear-gradient(135deg, #ff2442 0%, #ff6b81 100%);
+            color: white;
+        }
         .live-stream-link:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -188,6 +192,119 @@
             color: #999;
             font-weight: bold;
             font-size: 14px;
+        }
+        .match-score-display {
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 50px;
+        }
+        /* ===== 排行榜 ===== */
+        .standings-sub-tabs {
+            display: flex;
+            background: #f0f3ff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .standings-sub-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .standings-sub-tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .standings-group-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .standings-group-btn {
+            padding: 6px 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .standings-group-btn.active { background: #667eea; color: white; }
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .standings-table th {
+            background: #667eea;
+            color: white;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 11px;
+            position: sticky;
+            top: 0;
+        }
+        .standings-table td {
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .standings-table tr:nth-child(even) { background: #f8f9fa; }
+        .standings-table tr:hover { background: #e8ecff; }
+        .standings-pos {
+            font-weight: bold;
+            color: #667eea;
+            width: 25px;
+        }
+        .standings-team {
+            text-align: left;
+            font-weight: 500;
+        }
+        .standings-qualified {
+            background: #e8f5e9 !important;
+        }
+        .top-scorer-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .top-scorer-table th {
+            background: #764ba2;
+            color: white;
+            padding: 8px;
+            text-align: center;
+        }
+        .top-scorer-table td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .top-scorer-table tr:nth-child(even) { background: #f8f9fa; }
+        .top-scorer-name {
+            text-align: left;
+            font-weight: 500;
+        }
+        .top-scorer-goals {
+            font-weight: bold;
+            color: #764ba2;
+            font-size: 15px;
         }
         /* ===== 球员标签 ===== */
         .player-captain {
@@ -812,6 +929,7 @@
         <div class="tab-container">
             <div class="tab" onclick="switchTab('group', this)">小组赛</div>
             <div class="tab" onclick="switchTab('knockout', this)">淘汰赛</div>
+            <div class="tab" onclick="switchTab('standings', this)">排行榜</div>
             <div class="tab active" onclick="switchTab('squad', this)">球队阵容</div>
         </div>
         <div class="content">
@@ -825,6 +943,11 @@
                 <div style="padding:20px;text-align:center;color:#999;">
                     <p>⏳ 正在加载淘汰赛数据...</p>
                     <button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#667eea;color:white;border:none;border-radius:6px;cursor:pointer;">刷新页面</button>
+                </div>
+            </div>
+            <div id="standingsSection" class="section">
+                <div style="padding:20px;text-align:center;color:#999;">
+                    <p>⏳ 正在加载排行榜数据...</p>
                 </div>
             </div>
             <div id="squadSection" class="section active">
@@ -1041,7 +1164,9 @@
             { id:"tencent", name:"腾讯", icon:"🐧", cssClass:"tencent",
               url:"https://sports.qq.com/", searchUrl:"https://sports.qq.com/kbsweb/search.htm?query=" },
             { id:"cctv5", name:"CCTV5", icon:"🏆", cssClass:"cctv5",
-              url:"https://tv.cctv.com/live/cctv5/", searchUrl:null }
+              url:"https://tv.cctv.com/live/cctv5/", searchUrl:null },
+            { id:"xiaohongshu", name:"小红书", icon:"📕", cssClass:"xiaohongshu",
+              url:"https://www.xiaohongshu.com/search_result?keyword=", searchUrl:"https://www.xiaohongshu.com/search_result?keyword=" }
         ];
 
         // 生成直播平台链接 HTML（增强版：移动端直达APP）
@@ -1235,78 +1360,70 @@
 
         // ===== 小组赛数据（含场地） =====
         const groupMatches = [
-            {date:"6月12日 凌晨3:00", group:"A组", home:"墨西哥", away:"南非", venue:"墨西哥城 Estadio Azteca"},
-            {date:"6月12日 上午10:00", group:"A组", home:"韩国", away:"波黑", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月13日 凌晨3:00", group:"B组", home:"加拿大", away:"波黑", venue:"多伦多 BMO Field"},
-            {date:"6月13日 上午9:00", group:"D组", home:"美国", away:"巴拉圭", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月14日 凌晨3:00", group:"B组", home:"卡塔尔", away:"瑞士", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月14日 上午6:00", group:"C组", home:"巴西", away:"摩洛哥", venue:"纽约 MetLife Stadium"},
-            {date:"6月14日 上午9:00", group:"C组", home:"海地", away:"苏格兰", venue:"马萨诸塞 Gillette Stadium"},
-            {date:"6月14日 中午12:00", group:"D组", home:"澳大利亚", away:"土耳其", venue:"温哥华 BC Place"},
-            {date:"6月15日 凌晨1:00", group:"E组", home:"德国", away:"库拉索", venue:"休斯敦 NRG Stadium"},
-            {date:"6月15日 凌晨4:00", group:"F组", home:"荷兰", away:"日本", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月15日 上午7:00", group:"E组", home:"科特迪瓦", away:"厄瓜多尔", venue:"费城 Lincoln Financial Field"},
-            {date:"6月15日 上午10:00", group:"F组", home:"瑞典", away:"突尼斯", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月16日 凌晨0:00", group:"H组", home:"西班牙", away:"佛得角", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月16日 凌晨3:00", group:"G组", home:"比利时", away:"埃及", venue:"西雅图 Lumen Field"},
-            {date:"6月16日 上午6:00", group:"H组", home:"沙特阿拉伯", away:"乌拉圭", venue:"迈阿密 Hard Rock Stadium"},
-            {date:"6月16日 上午9:00", group:"G组", home:"伊朗", away:"新西兰", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月17日 凌晨3:00", group:"I组", home:"法国", away:"塞内加尔", venue:"纽约 MetLife Stadium"},
-            {date:"6月17日 上午6:00", group:"I组", home:"伊拉克", away:"挪威", venue:"马萨诸塞 Gillette Stadium"},
-            {date:"6月17日 上午9:00", group:"J组", home:"阿根廷", away:"阿尔及利亚", venue:"堪萨斯城 Arrowhead Stadium"},
-            {date:"6月17日 中午12:00", group:"J组", home:"奥地利", away:"约旦", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月18日 凌晨1:00", group:"K组", home:"葡萄牙", away:"刚果民主共和国", venue:"休斯敦 NRG Stadium"},
-            {date:"6月18日 凌晨4:00", group:"L组", home:"英格兰", away:"克罗地亚", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月18日 上午7:00", group:"L组", home:"加纳", away:"巴拿马", venue:"多伦多 BMO Field"},
-            {date:"6月18日 上午10:00", group:"K组", home:"乌兹别克斯坦", away:"哥伦比亚", venue:"墨西哥城 Estadio Azteca"},
-            {date:"6月19日 凌晨0:00", group:"A组", home:"南非", away:"波黑", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月19日 凌晨3:00", group:"B组", home:"瑞士", away:"波黑", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月19日 上午6:00", group:"B组", home:"加拿大", away:"卡塔尔", venue:"温哥华 BC Place"},
-            {date:"6月19日 上午9:00", group:"A组", home:"墨西哥", away:"韩国", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月20日 凌晨3:00", group:"D组", home:"美国", away:"澳大利亚", venue:"西雅图 Lumen Field"},
-            {date:"6月20日 上午6:00", group:"C组", home:"苏格兰", away:"摩洛哥", venue:"马萨诸塞 Gillette Stadium"},
-            {date:"6月20日 上午9:00", group:"C组", home:"巴西", away:"海地", venue:"费城 Lincoln Financial Field"},
-            {date:"6月20日 中午12:00", group:"D组", home:"土耳其", away:"巴拉圭", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月21日 凌晨1:00", group:"F组", home:"荷兰", away:"瑞典", venue:"休斯敦 NRG Stadium"},
+            {date:"6月11日 上午10:00", group:"A组", home:"墨西哥", away:"南非", score:"2-0", venue:"墨西哥城 Estadio Azteca"},
+            {date:"6月11日 晚上19:00", group:"A组", home:"韩国", away:"捷克", score:"2-1", venue:"瓜达拉哈拉 Estadio Akron"},
+            {date:"6月18日 上午9:00", group:"A组", home:"墨西哥", away:"韩国", score:"1-0", venue:"瓜达拉哈拉 Estadio Akron"},
+            {date:"6月18日 晚上20:00", group:"A组", home:"捷克", away:"南非", score:"1-1", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月13日 凌晨3:00", group:"B组", home:"加拿大", away:"波黑", score:"1-1", venue:"多伦多 BMO Field"},
+            {date:"6月14日 凌晨3:00", group:"B组", home:"卡塔尔", away:"瑞士", score:"1-1", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月19日 上午10:00", group:"B组", home:"加拿大", away:"卡塔尔", score:"6-0", venue:"温哥华 BC Place"},
+            {date:"6月19日 凌晨3:00", group:"B组", home:"瑞士", away:"波黑", score:"4-1", venue:"洛杉矶 SoFi Stadium"},
+            {date:"6月14日 上午6:00", group:"C组", home:"巴西", away:"摩洛哥", score:"1-1", venue:"纽约 MetLife Stadium"},
+            {date:"6月14日 上午9:00", group:"C组", home:"海地", away:"苏格兰", score:"0-1", venue:"马萨诸塞 Gillette Stadium"},
+            {date:"6月20日 上午6:00", group:"C组", home:"巴西", away:"海地", score:"3-0", venue:"费城 Lincoln Financial Field"},
+            {date:"6月20日 凌晨3:00", group:"C组", home:"苏格兰", away:"摩洛哥", score:"0-1", venue:"马萨诸塞 Gillette Stadium"},
+            {date:"6月13日 上午9:00", group:"D组", home:"美国", away:"巴拉圭", score:"4-1", venue:"洛杉矶 SoFi Stadium"},
+            {date:"6月14日 中午12:00", group:"D组", home:"澳大利亚", away:"土耳其", score:"2-0", venue:"温哥华 BC Place"},
+            {date:"6月19日 凌晨0:00", group:"D组", home:"美国", away:"澳大利亚", score:"2-0", venue:"西雅图 Lumen Field"},
+            {date:"6月19日 中午12:00", group:"D组", home:"土耳其", away:"巴拉圭", score:"0-1", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月15日 凌晨1:00", group:"E组", home:"德国", away:"库拉索", score:"7-1", venue:"休斯敦 NRG Stadium"},
+            {date:"6月15日 上午7:00", group:"E组", home:"科特迪瓦", away:"厄瓜多尔", score:"1-0", venue:"费城 Lincoln Financial Field"},
             {date:"6月21日 凌晨4:00", group:"E组", home:"德国", away:"科特迪瓦", venue:"多伦多 BMO Field"},
             {date:"6月21日 上午8:00", group:"E组", home:"厄瓜多尔", away:"库拉索", venue:"堪萨斯城 Arrowhead Stadium"},
+            {date:"6月26日 凌晨4:00", group:"E组", home:"厄瓜多尔", away:"德国", venue:"纽约 MetLife Stadium"},
+            {date:"6月26日 上午10:00", group:"E组", home:"库拉索", away:"科特迪瓦", venue:"休斯敦 NRG Stadium"},
+            {date:"6月14日 凌晨1:00", group:"F组", home:"瑞典", away:"突尼斯", score:"5-1", venue:"蒙特雷 Estadio BBVA"},
+            {date:"6月14日 凌晨4:00", group:"F组", home:"荷兰", away:"日本", score:"2-2", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月21日 凌晨1:00", group:"F组", home:"荷兰", away:"瑞典", venue:"休斯敦 NRG Stadium"},
             {date:"6月21日 中午12:00", group:"F组", home:"突尼斯", away:"日本", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月22日 凌晨0:00", group:"H组", home:"西班牙", away:"沙特阿拉伯", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月26日 上午7:00", group:"F组", home:"突尼斯", away:"荷兰", venue:"堪萨斯城 Arrowhead Stadium"},
+            {date:"6月26日 上午10:00", group:"F组", home:"日本", away:"瑞典", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月15日 凌晨0:00", group:"G组", home:"比利时", away:"埃及", score:"1-1", venue:"西雅图 Lumen Field"},
+            {date:"6月15日 上午10:00", group:"G组", home:"伊朗", away:"新西兰", score:"2-2", venue:"洛杉矶 SoFi Stadium"},
             {date:"6月22日 凌晨3:00", group:"G组", home:"比利时", away:"伊朗", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月22日 上午6:00", group:"H组", home:"乌拉圭", away:"佛得角", venue:"迈阿密 Hard Rock Stadium"},
             {date:"6月22日 上午9:00", group:"G组", home:"新西兰", away:"埃及", venue:"温哥华 BC Place"},
-            {date:"6月23日 凌晨1:00", group:"J组", home:"阿根廷", away:"奥地利", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月27日 中午11:00", group:"G组", home:"新西兰", away:"比利时", venue:"温哥华 BC Place"},
+            {date:"6月27日 晚上20:00", group:"G组", home:"埃及", away:"伊朗", venue:"西雅图 Lumen Field"},
+            {date:"6月15日 凌晨4:00", group:"H组", home:"西班牙", away:"佛得角", score:"0-0", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月15日 上午8:00", group:"H组", home:"沙特阿拉伯", away:"乌拉圭", score:"1-1", venue:"迈阿密 Hard Rock Stadium"},
+            {date:"6月22日 凌晨0:00", group:"H组", home:"西班牙", away:"沙特阿拉伯", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月22日 上午6:00", group:"H组", home:"乌拉圭", away:"佛得角", venue:"迈阿密 Hard Rock Stadium"},
+            {date:"6月27日 上午8:00", group:"H组", home:"乌拉圭", away:"西班牙", venue:"瓜达拉哈拉 Estadio Akron"},
+            {date:"6月27日 中午12:00", group:"H组", home:"佛得角", away:"沙特阿拉伯", venue:"休斯敦 NRG Stadium"},
+            {date:"6月16日 上午6:00", group:"I组", home:"法国", away:"塞内加尔", score:"3-1", venue:"纽约 MetLife Stadium"},
+            {date:"6月16日 凌晨3:00", group:"I组", home:"伊拉克", away:"挪威", score:"1-4", venue:"马萨诸塞 Gillette Stadium"},
             {date:"6月23日 凌晨5:00", group:"I组", home:"法国", away:"伊拉克", venue:"费城 Lincoln Financial Field"},
             {date:"6月23日 上午8:00", group:"I组", home:"挪威", away:"塞内加尔", venue:"纽约 MetLife Stadium"},
+            {date:"6月27日 凌晨3:00", group:"I组", home:"挪威", away:"法国", venue:"马萨诸塞 Gillette Stadium"},
+            {date:"6月27日 上午8:00", group:"I组", home:"塞内加尔", away:"伊拉克", venue:"多伦多 BMO Field"},
+            {date:"6月16日 上午9:00", group:"J组", home:"阿根廷", away:"阿尔及利亚", score:"3-0", venue:"堪萨斯城 Arrowhead Stadium"},
+            {date:"6月16日 中午12:00", group:"J组", home:"奥地利", away:"约旦", score:"3-1", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月23日 凌晨1:00", group:"J组", home:"阿根廷", away:"奥地利", venue:"达拉斯 AT&T Stadium"},
             {date:"6月23日 中午11:00", group:"J组", home:"约旦", away:"阿尔及利亚", venue:"圣克拉拉 Levi's Stadium"},
+            {date:"6月28日 上午10:00", group:"J组", home:"约旦", away:"阿根廷", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月28日 晚上20:00", group:"J组", home:"阿尔及利亚", away:"奥地利", venue:"堪萨斯城 Arrowhead Stadium"},
+            {date:"6月17日 凌晨1:00", group:"K组", home:"葡萄牙", away:"刚果民主共和国", score:"1-1", venue:"休斯敦 NRG Stadium"},
+            {date:"6月17日 上午10:00", group:"K组", home:"乌兹别克斯坦", away:"哥伦比亚", score:"1-3", venue:"墨西哥城 Estadio Azteca"},
             {date:"6月24日 凌晨1:00", group:"K组", home:"葡萄牙", away:"乌兹别克斯坦", venue:"休斯敦 NRG Stadium"},
+            {date:"6月24日 上午10:00", group:"K组", home:"哥伦比亚", away:"刚果民主共和国", venue:"瓜达拉哈拉 Estadio Akron"},
+            {date:"6月28日 上午7:30", group:"K组", home:"哥伦比亚", away:"葡萄牙", venue:"迈阿密 Hard Rock Stadium"},
+            {date:"6月28日 晚上20:00", group:"K组", home:"乌兹别克斯坦", away:"刚果民主共和国", venue:"亚特兰大 Mercedes-Benz Stadium"},
+            {date:"6月17日 凌晨4:00", group:"L组", home:"英格兰", away:"克罗地亚", score:"4-2", venue:"达拉斯 AT&T Stadium"},
+            {date:"6月17日 上午7:00", group:"L组", home:"加纳", away:"巴拿马", score:"1-0", venue:"多伦多 BMO Field"},
             {date:"6月24日 凌晨4:00", group:"L组", home:"英格兰", away:"加纳", venue:"马萨诸塞 Gillette Stadium"},
             {date:"6月24日 上午7:00", group:"L组", home:"巴拿马", away:"克罗地亚", venue:"多伦多 BMO Field"},
-            {date:"6月24日 上午10:00", group:"K组", home:"哥伦比亚", away:"刚果民主共和国", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月25日 凌晨3:00", group:"B组", home:"加拿大", away:"瑞士", venue:"温哥华 BC Place"},
-            {date:"6月25日 凌晨3:00", group:"B组", home:"卡塔尔", away:"波黑", venue:"西雅图 Lumen Field"},
-            {date:"6月25日 上午6:00", group:"C组", home:"苏格兰", away:"巴西", venue:"迈阿密 Hard Rock Stadium"},
-            {date:"6月25日 上午6:00", group:"C组", home:"摩洛哥", away:"海地", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月25日 上午9:00", group:"A组", home:"墨西哥", away:"波黑", venue:"墨西哥城 Estadio Azteca"},
-            {date:"6月25日 上午9:00", group:"A组", home:"南非", away:"韩国", venue:"蒙特雷 Estadio BBVA"},
-            {date:"6月26日 凌晨4:00", group:"E组", home:"厄瓜多尔", away:"德国", venue:"纽约 MetLife Stadium"},
-            {date:"6月26日 凌晨4:00", group:"E组", home:"库拉索", away:"科特迪瓦", venue:"费城 Lincoln Financial Field"},
-            {date:"6月26日 上午7:00", group:"F组", home:"突尼斯", away:"荷兰", venue:"堪萨斯城 Arrowhead Stadium"},
-            {date:"6月26日 上午7:00", group:"F组", home:"日本", away:"瑞典", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月26日 上午10:00", group:"D组", home:"美国", away:"土耳其", venue:"洛杉矶 SoFi Stadium"},
-            {date:"6月26日 上午10:00", group:"D组", home:"巴拉圭", away:"澳大利亚", venue:"圣克拉拉 Levi's Stadium"},
-            {date:"6月27日 凌晨3:00", group:"I组", home:"挪威", away:"法国", venue:"马萨诸塞 Gillette Stadium"},
-            {date:"6月27日 凌晨3:00", group:"I组", home:"塞内加尔", away:"伊拉克", venue:"多伦多 BMO Field"},
-            {date:"6月27日 上午8:00", group:"H组", home:"乌拉圭", away:"西班牙", venue:"瓜达拉哈拉 Estadio Akron"},
-            {date:"6月27日 上午8:00", group:"H组", home:"佛得角", away:"沙特阿拉伯", venue:"休斯敦 NRG Stadium"},
-            {date:"6月27日 中午11:00", group:"G组", home:"新西兰", away:"比利时", venue:"温哥华 BC Place"},
-            {date:"6月27日 中午11:00", group:"G组", home:"埃及", away:"伊朗", venue:"西雅图 Lumen Field"},
-            {date:"6月28日 上午5:00", group:"L组", home:"巴拿马", away:"英格兰", venue:"纽约 MetLife Stadium"},
-            {date:"6月28日 上午5:00", group:"L组", home:"克罗地亚", away:"加纳", venue:"费城 Lincoln Financial Field"},
-            {date:"6月28日 上午7:30", group:"K组", home:"哥伦比亚", away:"葡萄牙", venue:"迈阿密 Hard Rock Stadium"},
-            {date:"6月28日 上午7:30", group:"K组", home:"乌兹别克斯坦", away:"刚果民主共和国", venue:"亚特兰大 Mercedes-Benz Stadium"},
-            {date:"6月28日 上午10:00", group:"J组", home:"约旦", away:"阿根廷", venue:"达拉斯 AT&T Stadium"},
-            {date:"6月28日 上午10:00", group:"J组", home:"阿尔及利亚", away:"奥地利", venue:"堪萨斯城 Arrowhead Stadium"}
+            {date:"6月28日 凌晨5:00", group:"L组", home:"巴拿马", away:"英格兰", venue:"纽约 MetLife Stadium"},
+            {date:"6月28日 上午8:00", group:"L组", home:"克罗地亚", away:"加纳", venue:"费城 Lincoln Financial Field"},
         ];;
 
         // ===== 淘汰赛场地映射 =====
@@ -2109,6 +2226,9 @@
             matches.forEach(match => {
                 const homeFlag = getFlag(match.home);
                 const awayFlag = getFlag(match.away);
+                const scoreHtml = match.score
+                    ? `<div class="match-score-display">${match.score}</div><div class="vs" style="font-size:11px;color:#999;">已结束</div>`
+                    : `<div class="vs">VS</div>`;
                 html += `
                     <div class="match-card">
                         <div class="match-date">🕐 ${match.date}</div>
@@ -2120,7 +2240,7 @@
                                     <span class="team-name-only">${match.home}</span>
                                 </div>
                             </div>
-                            <div class="vs">VS</div>
+                            ${scoreHtml}
                             <div class="team">
                                 <div class="team-with-flag" onclick="goToSquad('${match.away}')">
                                     <span class="flag-small">${awayFlag}</span>
@@ -2233,11 +2353,7 @@
         // ===== 点击球队名跳转 =====
         function goToSquad(country) {
             // 切换到球队阵容标签页
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.tab')[2].classList.add('active');
-            document.getElementById('squadSection').classList.add('active');
-            // 渲染阵容并选中该国家
+            switchTab('squad', document.querySelectorAll('.tab')[3]);
             renderSquadSection(country);
         }
 
@@ -2250,9 +2366,120 @@
                 document.getElementById('groupSection').classList.add('active');
             } else if (tab === 'knockout') {
                 document.getElementById('knockoutSection').classList.add('active');
+            } else if (tab === 'standings') {
+                document.getElementById('standingsSection').classList.add('active');
+                renderStandings();
             } else if (tab === 'squad') {
                 document.getElementById('squadSection').classList.add('active');
             }
+        }
+
+        // ===== 排行榜 =====
+        function renderStandings() {
+            const section = document.getElementById('standingsSection');
+            
+            let html = '<div class="standings-sub-tabs">';
+            html += '<div class="standings-sub-tab active" onclick="showStandingsSubTab(\'table\', this)">📊 积分榜</div>';
+            html += '<div class="standings-sub-tab" onclick="showStandingsSubTab(\'scorers\', this)">⚽ 射手榜</div>';
+            html += '</div>';
+            
+            html += '<div id="standingsTableTab">';
+            html += '<div class="standings-group-filter">';
+            html += '<button class="standings-group-btn active" onclick="filterStandingsGroup(\'all\', this)">全部</button>';
+            const groups = [...new Set(groupMatches.map(m => m.group))].sort();
+            groups.forEach(g => {
+                html += `<button class="standings-group-btn" onclick="filterStandingsGroup('${g}', this)">${g}</button>`;
+            });
+            html += '</div>';
+            html += '<div id="standingsTableContent"></div>';
+            html += '</div>';
+            
+            html += '<div id="topScorersTab" style="display:none;"></div>';
+            
+            section.innerHTML = html;
+            renderStandingsTable('all');
+        }
+
+        function calculateStandings() {
+            const teams = {};
+            groupMatches.forEach(match => {
+                if (!match.score) return;
+                const [hs, as] = match.score.split('-').map(Number);
+                [match.home, match.away].forEach(team => {
+                    if (!teams[team]) teams[team] = { team, group: match.group, played:0, won:0, drawn:0, lost:0, gf:0, ga:0, points:0 };
+                });
+                teams[match.home].played++;
+                teams[match.away].played++;
+                teams[match.home].gf += hs;
+                teams[match.home].ga += as;
+                teams[match.away].gf += as;
+                teams[match.away].ga += hs;
+                if (hs > as) { teams[match.home].won++; teams[match.home].points += 3; teams[match.away].lost++; }
+                else if (hs < as) { teams[match.away].won++; teams[match.away].points += 3; teams[match.home].lost++; }
+                else { teams[match.home].drawn++; teams[match.away].drawn++; teams[match.home].points += 1; teams[match.away].points += 1; }
+            });
+            return Object.values(teams);
+        }
+
+        function renderStandingsTable(filter) {
+            const standings = calculateStandings();
+            const filtered = filter === 'all' ? standings : standings.filter(t => t.group === filter);
+            const groups = {};
+            filtered.forEach(t => {
+                if (!groups[t.group]) groups[t.group] = [];
+                groups[t.group].push(t);
+            });
+            for (const g in groups) {
+                groups[g].sort((a, b) => b.points !== a.points ? b.points - a.points : ((b.gf - b.ga) !== (a.gf - a.ga)) ? (b.gf - b.ga) - (a.gf - a.ga) : b.gf - a.gf);
+            }
+            let html = '';
+            for (const group in groups) {
+                html += `<div style="margin-bottom:20px;"><h3 style="color:#667eea;margin-bottom:10px;">${group}</h3><table class="standings-table"><tr><th>排名</th><th style="text-align:left;">球队</th><th>赛</th><th>胜</th><th>平</th><th>负</th><th>进</th><th>失</th><th>净</th><th>积分</th></tr>`;
+                groups[group].forEach((t, i) => {
+                    const gd = t.gf - t.ga, gdStr = gd >= 0 ? '+' + gd : '' + gd;
+                    html += `<tr class="${i < 2 ? 'standings-qualified' : ''}"><td class="standings-pos">${i+1}</td><td class="standings-team"><span style="margin-right:5px;">${getFlag(t.team)}</span>${t.team}</td><td>${t.played}</td><td>${t.won}</td><td>${t.drawn}</td><td>${t.lost}</td><td>${t.gf}</td><td>${t.ga}</td><td>${gdStr}</td><td style="font-weight:bold;">${t.points}</td></tr>`;
+                });
+                html += '</table></div>';
+            }
+            const el = document.getElementById('standingsTableContent');
+            if (el) el.innerHTML = html;
+        }
+
+        function filterStandingsGroup(group, btn) {
+            document.querySelectorAll('.standings-group-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderStandingsTable(group);
+        }
+
+        function showStandingsSubTab(tab, element) {
+            document.querySelectorAll('.standings-sub-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('standingsTableTab').style.display = tab === 'table' ? '' : 'none';
+            document.getElementById('topScorersTab').style.display = tab === 'scorers' ? '' : 'none';
+            if (tab === 'scorers') renderTopScorers();
+        }
+
+        function renderTopScorers() {
+            // 2026世界杯射手榜（数据更新至6月20日，来源：FIFA官网/腾讯体育）
+            const topScorers = [
+                { name: '利昂内尔·梅西', team: '阿根廷', goals: 3 },
+                { name: '乔纳森·大卫', team: '加拿大', goals: 3 },
+                { name: '基利安·姆巴佩', team: '法国', goals: 2 },
+                { name: '埃尔林·哈兰德', team: '挪威', goals: 2 },
+                { name: '凯·哈弗茨', team: '德国', goals: 2 },
+                { name: '哈里·凯恩', team: '英格兰', goals: 2 },
+                { name: '法雷斯·巴洛贡', team: '美国', goals: 2 },
+                { name: '雅辛·阿亚里', team: '瑞典', goals: 2 },
+                { name: '克里斯·贾斯特', team: '新西兰', goals: 2 },
+                { name: '维尼修斯·儒尼奥尔', team: '巴西', goals: 1 }
+            ];
+            let html = '<table class="top-scorer-table"><tr><th>排名</th><th style="text-align:left;">球员</th><th>球队</th><th>进球</th></tr>';
+            topScorers.forEach((s, i) => {
+                html += `<tr><td>${i+1}</td><td class="top-scorer-name">${s.name}</td><td>${s.team}</td><td class="top-scorer-goals">${s.goals}</td></tr>`;
+            });
+            html += '</table><p style="text-align:center;color:#999;font-size:12px;margin-top:10px;">* 数据更新至2026年6月20日，后续比赛数据将持续更新</p>';
+            const el = document.getElementById('topScorersTab');
+            if (el) el.innerHTML = html;
         }
 
         // ===== 微信浏览器检测与提示 =====
