@@ -1,6 +1,6 @@
 // pages/squad/squad.js
 const { teamSquads } = require('../../data/teamSquads.js');
-const { playerMatches } = require('../../packageSquad/data/playerMatches.js');
+// const { playerMatches } = require('../../packageSquad/data/playerMatches.js');  // 临时移除，减小包体积
 
 Page({
   data: {
@@ -57,8 +57,8 @@ Page({
     const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=667eea&color=fff&size=200&font-size=0.45&bold=true&rounded=true`;
     this.setData({ playerModalAvatar: avatarUrl });
 
-    // 加载近期比赛（本地数据，零延迟）
-    const matches = playerMatches[name] || [];
+    // 加载近期比赛（临时：不显示比赛数据）
+    const matches = [];  // playerMatches[name] || []  临时移除
     this.setData({
       playerModalLoading: false,
       playerModalMatches: matches
